@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
         endDate: body.endDate ? new Date(body.endDate) : null,
         cycleDays: body.cycleDays || 28,
         symptoms: body.symptoms || null,
+        flowLevel: body.flowLevel || null,
+        notes: body.notes || null,
       },
     });
     return NextResponse.json(record);

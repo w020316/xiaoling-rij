@@ -1,116 +1,205 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  Droplets, Dumbbell, Apple, Moon, Thermometer,
-  Plus, Camera, Sparkles
-} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { Thermometer, Plus, Minus, ChevronRight } from "lucide-react";
 
-interface CalorieRecord {
+interface ExerciseRecord {
   id: string;
-  foodName: string;
+  type: string;
+  duration: number;
   calories: number;
-  protein: number;
-  fat: number;
-  carbs: number;
-  mealType: string;
+  date: string;
 }
 
-interface PeriodRecord {
+interface SleepRecord {
   id: string;
-  startDate: string;
-  endDate: string | null;
-  cycleDays: number;
-  symptoms: string | null;
+  bedtime: string;
+  wakeTime: string;
+  quality: string;
+  date: string;
+}
+
+interface PeriodPrediction {
+  nextDate: string | null;
+  daysUntil: number | null;
+}
+
+type TabKey = "water" | "exercise" | "sleep" | "period";
+
+const EXERCISE_TYPES = ["跑步", "瑜伽", "游泳", "骑行", "健身", "散步", "其他"];
+const EXERCISE_EMOJIS: Record<string, string> = {
+  "跑步": "🏃", "瑜伽": "🧘", "游泳": "🏊", "骑行": "🚴",
+  "健身": "💪", "散步": "🚶", "其他": "🏅",
+};
+const SLEEP_QUALITY_OPTIONS = [
+  { value: "好", emoji: "😊", color: "text-green-500" },
+  { value: "一般", emoji: "😐", color: "text-yellow-500" },
+  { value: "差", emoji: "😫", color: "text-red-500" },
+];
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getWeekDates(): string[] {
+  const dates: string[] = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  return dates;
+}
+
+function calcSleepDuration(bedtime: string, wakeTime: string): number {
+  const [bh, bm] = bedtime.split(":").map(Number);
+  const [wh, wm] = wakeTime.split(":").map(Number);
+  let bedMin = bh * 60 + bm;
+  let wakeMin = wh * 60 + wm;
+  if (wakeMin <= bedMin) wakeMin += 24 * 60;
+  return Math.round((wakeMin - bedMin) / 60 * 10) / 10;
 }
 
 export default function HealthPage() {
-  const [activeTab, setActiveTab] = useState<"water" | "exercise" | "calorie" | "period">("water");
+  const [activeTab, setActiveTab] = useState<TabKey>("water");
   const [waterCups, setWaterCups] = useState(0);
-  const [calorieRecords, setCalorieRecords] = useState<CalorieRecord[]>([]);
-  const [periodRecords, setPeriodRecords] = useState<PeriodRecord[]>([]);
-  const [showAddFood, setShowAddFood] = useState(false);
-  const [showAddPeriod, setShowAddPeriod] = useState(false);
-  const [newFood, setNewFood] = useState({ foodName: "", calories: 0, protein: 0, fat: 0, carbs: 0, mealType: "lunch" });
-  const [newPeriod, setNewPeriod] = useState({ startDate: "", cycleDays: 28, symptoms: "" });
+  const [exerciseRecords, setExerciseRecords] = useState<ExerciseRecord[]>([]);
+  const [sleepRecords, setSleepRecords] = useState<SleepRecord[]>([]);
+  const [periodPrediction, setPeriodPrediction] = useState<PeriodPrediction>({ nextDate: null, daysUntil: null });
+  const [showAddExercise, setShowAddExercise] = useState(false);
+  const [showAddSleep, setShowAddSleep] = useState(false);
+  const [newExercise, setNewExercise] = useState({ type: "跑步", duration: 30, calories: 100 });
+  const [newSleep, setNewSleep] = useState({ bedtime: "23:00", wakeTime: "07:00", quality: "好" });
 
-  useEffect(() => {
-    if (activeTab === "calorie") {
-      fetch("/api/calorie").then((r) => r.json()).then(setCalorieRecords);
-    }
-    if (activeTab === "period") {
-      fetch("/api/health/period").then((r) => r.json()).then(setPeriodRecords);
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("lovedaily-water");
-    const today = new Date().toDateString();
-    if (saved) {
-      const data = JSON.parse(saved);
-      if (data.date === today) setWaterCups(data.cups);
-    }
+  const loadWater = useCallback(() => {
+    const key = `water-cups-${getTodayKey()}`;
+    const saved = localStorage.getItem(key);
+    if (saved) setWaterCups(Number(saved));
+    else setWaterCups(0);
   }, []);
 
+  const loadExercise = useCallback(() => {
+    const saved = localStorage.getItem("exercise-records");
+    if (saved) setExerciseRecords(JSON.parse(saved));
+  }, []);
+
+  const loadSleep = useCallback(() => {
+    const saved = localStorage.getItem("sleep-records");
+    if (saved) setSleepRecords(JSON.parse(saved));
+  }, []);
+
+  const loadPeriodPrediction = useCallback(async () => {
+    try {
+      const res = await fetch("/api/health/period");
+      const records = await res.json();
+      if (records.length > 0) {
+        const last = records[0];
+        const next = new Date(last.startDate);
+        next.setDate(next.getDate() + last.cycleDays);
+        const days = Math.max(0, Math.ceil((next.getTime() - Date.now()) / 86400000));
+        setPeriodPrediction({ nextDate: next.toISOString().slice(0, 10), daysUntil: days });
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadWater();
+    loadExercise();
+    loadSleep();
+    loadPeriodPrediction();
+  }, [loadWater, loadExercise, loadSleep, loadPeriodPrediction]);
+
   function updateWater(cups: number) {
-    setWaterCups(cups);
-    localStorage.setItem("lovedaily-water", JSON.stringify({ date: new Date().toDateString(), cups }));
+    const clamped = Math.max(0, Math.min(8, cups));
+    setWaterCups(clamped);
+    localStorage.setItem(`water-cups-${getTodayKey()}`, String(clamped));
   }
 
-  async function addFoodRecord() {
-    if (!newFood.foodName) return;
-    await fetch("/api/calorie", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newFood),
-    });
-    setShowAddFood(false);
-    setNewFood({ foodName: "", calories: 0, protein: 0, fat: 0, carbs: 0, mealType: "lunch" });
-    const res = await fetch("/api/calorie");
-    setCalorieRecords(await res.json());
+  function addExercise() {
+    const record: ExerciseRecord = {
+      id: Date.now().toString(),
+      type: newExercise.type,
+      duration: newExercise.duration,
+      calories: newExercise.calories,
+      date: getTodayKey(),
+    };
+    const updated = [record, ...exerciseRecords];
+    setExerciseRecords(updated);
+    localStorage.setItem("exercise-records", JSON.stringify(updated));
+    setShowAddExercise(false);
+    setNewExercise({ type: "跑步", duration: 30, calories: 100 });
   }
 
-  async function addPeriodRecord() {
-    if (!newPeriod.startDate) return;
-    await fetch("/api/health/period", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newPeriod),
-    });
-    setShowAddPeriod(false);
-    setNewPeriod({ startDate: "", cycleDays: 28, symptoms: "" });
-    const res = await fetch("/api/health/period");
-    setPeriodRecords(await res.json());
+  function addSleep() {
+    const record: SleepRecord = {
+      id: Date.now().toString(),
+      bedtime: newSleep.bedtime,
+      wakeTime: newSleep.wakeTime,
+      quality: newSleep.quality,
+      date: getTodayKey(),
+    };
+    const updated = [record, ...sleepRecords];
+    setSleepRecords(updated);
+    localStorage.setItem("sleep-records", JSON.stringify(updated));
+    setShowAddSleep(false);
+    setNewSleep({ bedtime: "23:00", wakeTime: "07:00", quality: "好" });
   }
 
-  const totalCalories = calorieRecords.reduce((sum, c) => sum + c.calories, 0);
-  const totalProtein = calorieRecords.reduce((sum, c) => sum + c.protein, 0);
-  const totalFat = calorieRecords.reduce((sum, c) => sum + c.fat, 0);
-  const totalCarbs = calorieRecords.reduce((sum, c) => sum + c.carbs, 0);
-
-  const lastPeriod = periodRecords[0];
-  let nextPeriodDate: Date | null = null;
-  if (lastPeriod) {
-    nextPeriodDate = new Date(lastPeriod.startDate);
-    nextPeriodDate.setDate(nextPeriodDate.getDate() + lastPeriod.cycleDays);
+  function deleteExercise(id: string) {
+    const updated = exerciseRecords.filter((r) => r.id !== id);
+    setExerciseRecords(updated);
+    localStorage.setItem("exercise-records", JSON.stringify(updated));
   }
+
+  function deleteSleep(id: string) {
+    const updated = sleepRecords.filter((r) => r.id !== id);
+    setSleepRecords(updated);
+    localStorage.setItem("sleep-records", JSON.stringify(updated));
+  }
+
+  const todayExercises = exerciseRecords.filter((r) => r.date === getTodayKey());
+  const todayTotalMinutes = todayExercises.reduce((s, r) => s + r.duration, 0);
+  const todayTotalCalories = todayExercises.reduce((s, r) => s + r.calories, 0);
+
+  const weekDates = getWeekDates();
+  const weekExerciseData = weekDates.map((date) => {
+    const dayRecords = exerciseRecords.filter((r) => r.date === date);
+    return { date, minutes: dayRecords.reduce((s, r) => s + r.duration, 0) };
+  });
+  const maxWeekMinutes = Math.max(...weekExerciseData.map((d) => d.minutes), 1);
+
+  const todaySleep = sleepRecords.find((r) => r.date === getTodayKey());
+  const recentSleep = sleepRecords.slice(0, 7);
+
+  const waterProgress = (waterCups / 8) * 100;
+
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: "water", label: "💧 喝水" },
+    { key: "exercise", label: "🏃 运动" },
+    { key: "sleep", label: "😴 睡眠" },
+    { key: "period", label: "🌸 经期" },
+  ];
 
   return (
     <main className="min-h-screen p-5 pb-28">
-      <header className="flex items-center gap-3 mb-5 pt-2">
+      <header className="flex items-center gap-3 mb-5 pt-2 fade-in">
         <Thermometer size={22} className="text-primary" />
         <h1 className="text-xl font-bold">健康管理</h1>
       </header>
 
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
-        {[
-          { key: "water", label: "💧 喝水" },
-          { key: "exercise", label: "🏃 运动" },
-          { key: "calorie", label: "🍎 热量" },
-          { key: "period", label: "🌸 生理期" },
-        ].map((tab) => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${activeTab === tab.key ? "bg-primary text-primary-foreground" : "glass-card text-muted-foreground"}`}>
+      <div className="flex gap-2 mb-5 overflow-x-auto pb-1 fade-in stagger-1">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+              activeTab === tab.key
+                ? "bg-primary text-primary-foreground"
+                : "glass-card text-muted-foreground"
+            }`}
+          >
             {tab.label}
           </button>
         ))}
@@ -118,135 +207,358 @@ export default function HealthPage() {
 
       {activeTab === "water" && (
         <div className="flex flex-col gap-4">
-          <div className="glass-card p-6 text-center">
+          <div className="glass-card p-6 text-center fade-in stagger-2">
             <p className="text-5xl mb-3">💧</p>
             <h2 className="text-3xl font-bold text-primary">{waterCups}/8</h2>
             <p className="text-sm text-muted-foreground mt-1">杯水</p>
+
+            <div className="mt-4 w-full bg-muted rounded-full h-3 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full transition-all duration-500"
+                style={{ width: `${waterProgress}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              每日目标 8 杯 · 已完成 {waterProgress.toFixed(0)}%
+            </p>
+
             <div className="flex justify-center gap-2 mt-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <button key={i} onClick={() => updateWater(i + 1)}
-                  className={`w-8 h-10 rounded-lg transition-all ${i < waterCups ? "bg-blue-400 text-white" : "bg-muted text-muted-foreground"} flex items-center justify-center text-xs`}>
+                <button
+                  key={i}
+                  onClick={() => updateWater(i < waterCups ? i : i + 1)}
+                  className={`w-8 h-10 rounded-lg transition-all duration-300 flex items-center justify-center text-xs ${
+                    i < waterCups
+                      ? "bg-blue-400 text-white scale-105"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
                   💧
                 </button>
               ))}
             </div>
+
             <div className="flex gap-3 mt-4 justify-center">
-              <button onClick={() => updateWater(Math.max(0, waterCups - 1))} className="glass-button-outline px-4 py-2 text-xs">-1 杯</button>
-              <button onClick={() => updateWater(Math.min(8, waterCups + 1))} className="glass-button px-4 py-2 text-xs">+1 杯</button>
+              <button
+                onClick={() => updateWater(waterCups - 1)}
+                className="glass-button-outline px-4 py-2 text-xs flex items-center gap-1"
+              >
+                <Minus size={14} /> 1 杯
+              </button>
+              <button
+                onClick={() => updateWater(waterCups + 1)}
+                className="glass-button px-4 py-2 text-xs flex items-center gap-1"
+              >
+                <Plus size={14} /> 1 杯
+              </button>
             </div>
           </div>
+
+          {waterCups >= 8 && (
+            <div className="glass-card p-4 text-center fade-in stagger-3">
+              <p className="text-3xl mb-1">🎉</p>
+              <p className="text-sm font-bold text-primary">今日喝水目标已达成！</p>
+            </div>
+          )}
         </div>
       )}
 
       {activeTab === "exercise" && (
         <div className="flex flex-col gap-4">
-          <div className="glass-card p-6 text-center">
+          <div className="glass-card p-5 text-center fade-in stagger-2">
             <p className="text-5xl mb-3">🏃</p>
-            <h2 className="text-3xl font-bold text-primary">30</h2>
+            <h2 className="text-3xl font-bold text-primary">{todayTotalMinutes}</h2>
             <p className="text-sm text-muted-foreground mt-1">分钟运动</p>
-          </div>
-          <div className="glass-card p-4">
-            <h3 className="text-sm font-bold mb-3">今日运动</h3>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-sm"><span>🏃 跑步</span><span className="text-muted-foreground">20 分钟</span></div>
-              <div className="flex items-center justify-between text-sm"><span>🧘 瑜伽</span><span className="text-muted-foreground">10 分钟</span></div>
-            </div>
-          </div>
-          <button className="glass-button-outline py-2 text-sm flex items-center justify-center gap-2"><Plus size={16} /> 记录运动</button>
-        </div>
-      )}
-
-      {activeTab === "calorie" && (
-        <div className="flex flex-col gap-4">
-          <div className="glass-card p-4">
-            <div className="text-center mb-3">
-              <p className="text-3xl font-bold text-primary">{totalCalories}</p>
-              <p className="text-xs text-muted-foreground">今日摄入 (kcal)</p>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="glass-card p-2"><p className="text-sm font-bold text-blue-500">{totalProtein.toFixed(1)}g</p><p className="text-[10px] text-muted-foreground">蛋白质</p></div>
-              <div className="glass-card p-2"><p className="text-sm font-bold text-yellow-500">{totalFat.toFixed(1)}g</p><p className="text-[10px] text-muted-foreground">脂肪</p></div>
-              <div className="glass-card p-2"><p className="text-sm font-bold text-orange-500">{totalCarbs.toFixed(1)}g</p><p className="text-[10px] text-muted-foreground">碳水</p></div>
-            </div>
-          </div>
-
-          <button onClick={() => setShowAddFood(true)} className="glass-button-outline py-2 text-sm flex items-center justify-center gap-2"><Plus size={16} /> 手动记录</button>
-
-          {showAddFood && (
-            <div className="glass-card p-4 flex flex-col gap-3">
-              <input type="text" value={newFood.foodName} onChange={(e) => setNewFood({ ...newFood, foodName: e.target.value })} placeholder="食物名称" className="glass-input px-3 py-2 text-sm" />
-              <div className="grid grid-cols-2 gap-2">
-                <input type="number" value={newFood.calories || ""} onChange={(e) => setNewFood({ ...newFood, calories: Number(e.target.value) })} placeholder="热量(kcal)" className="glass-input px-3 py-2 text-sm" />
-                <select value={newFood.mealType} onChange={(e) => setNewFood({ ...newFood, mealType: e.target.value })} className="glass-input px-3 py-2 text-sm">
-                  <option value="breakfast">早餐</option>
-                  <option value="lunch">午餐</option>
-                  <option value="dinner">晚餐</option>
-                  <option value="snack">加餐</option>
-                </select>
+            <div className="flex justify-center gap-4 mt-3">
+              <div className="glass-card px-3 py-2 text-center">
+                <p className="text-sm font-bold text-orange-500">{todayTotalCalories}</p>
+                <p className="text-[10px] text-muted-foreground">千卡</p>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <input type="number" value={newFood.protein || ""} onChange={(e) => setNewFood({ ...newFood, protein: Number(e.target.value) })} placeholder="蛋白质g" className="glass-input px-3 py-2 text-sm" />
-                <input type="number" value={newFood.fat || ""} onChange={(e) => setNewFood({ ...newFood, fat: Number(e.target.value) })} placeholder="脂肪g" className="glass-input px-3 py-2 text-sm" />
-                <input type="number" value={newFood.carbs || ""} onChange={(e) => setNewFood({ ...newFood, carbs: Number(e.target.value) })} placeholder="碳水g" className="glass-input px-3 py-2 text-sm" />
+              <div className="glass-card px-3 py-2 text-center">
+                <p className="text-sm font-bold text-blue-500">{todayExercises.length}</p>
+                <p className="text-[10px] text-muted-foreground">次运动</p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowAddExercise(true)}
+            className="glass-button-outline py-2 text-sm flex items-center justify-center gap-2 fade-in stagger-3"
+          >
+            <Plus size={16} /> 记录运动
+          </button>
+
+          {showAddExercise && (
+            <div className="glass-card p-4 flex flex-col gap-3 slide-up">
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">运动类型</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {EXERCISE_TYPES.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setNewExercise({ ...newExercise, type: t })}
+                      className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        newExercise.type === t
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {EXERCISE_EMOJIS[t]} {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">时长(分钟)</p>
+                  <input
+                    type="number"
+                    value={newExercise.duration || ""}
+                    onChange={(e) => setNewExercise({ ...newExercise, duration: Number(e.target.value) })}
+                    placeholder="30"
+                    className="glass-input px-3 py-2 text-sm w-full"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">消耗(千卡)</p>
+                  <input
+                    type="number"
+                    value={newExercise.calories || ""}
+                    onChange={(e) => setNewExercise({ ...newExercise, calories: Number(e.target.value) })}
+                    placeholder="100"
+                    className="glass-input px-3 py-2 text-sm w-full"
+                  />
+                </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={addFoodRecord} className="glass-button flex-1 py-2 text-xs">保存</button>
-                <button onClick={() => setShowAddFood(false)} className="glass-button-outline flex-1 py-2 text-xs">取消</button>
+                <button onClick={addExercise} className="glass-button flex-1 py-2 text-xs">保存</button>
+                <button onClick={() => setShowAddExercise(false)} className="glass-button-outline flex-1 py-2 text-xs">取消</button>
               </div>
             </div>
           )}
 
-          {calorieRecords.map((record) => (
-            <div key={record.id} className="glass-card p-3 flex items-center justify-between">
-              <div><p className="text-sm font-medium">{record.foodName}</p><p className="text-[10px] text-muted-foreground">{record.mealType === "breakfast" ? "早餐" : record.mealType === "lunch" ? "午餐" : record.mealType === "dinner" ? "晚餐" : "加餐"}</p></div>
-              <p className="text-sm font-bold text-primary">{record.calories}kcal</p>
+          {todayExercises.length > 0 && (
+            <div className="glass-card p-4 fade-in stagger-3">
+              <h3 className="text-sm font-bold mb-3">今日运动</h3>
+              <div className="flex flex-col gap-2">
+                {todayExercises.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between text-sm">
+                    <span>{EXERCISE_EMOJIS[r.type] || "🏅"} {r.type}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-muted-foreground">{r.duration} 分钟</span>
+                      <span className="text-orange-500 text-xs">{r.calories} kcal</span>
+                      <button onClick={() => deleteExercise(r.id)} className="text-muted-foreground hover:text-red-500 text-xs">✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          )}
 
-          {calorieRecords.length === 0 && !showAddFood && (
-            <p className="text-center text-sm text-muted-foreground py-8">还没有记录，点击上方添加 🍎</p>
+          <div className="glass-card p-4 fade-in stagger-4">
+            <h3 className="text-sm font-bold mb-3">本周运动</h3>
+            <div className="flex items-end gap-1 h-24">
+              {weekExerciseData.map((d, i) => {
+                const dayLabel = new Date(d.date).toLocaleDateString("zh-CN", { weekday: "narrow" });
+                const height = d.minutes > 0 ? Math.max(8, (d.minutes / maxWeekMinutes) * 100) : 4;
+                const isToday = d.date === getTodayKey();
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground">{d.minutes > 0 ? d.minutes : ""}</span>
+                    <div
+                      className={`w-full rounded-t-md transition-all duration-500 ${
+                        isToday ? "bg-primary" : d.minutes > 0 ? "bg-primary/40" : "bg-muted"
+                      }`}
+                      style={{ height: `${height}%` }}
+                    />
+                    <span className={`text-[9px] ${isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                      {dayLabel}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "sleep" && (
+        <div className="flex flex-col gap-4">
+          <div className="glass-card p-5 text-center fade-in stagger-2">
+            <p className="text-5xl mb-3">😴</p>
+            {todaySleep ? (
+              <>
+                <h2 className="text-3xl font-bold text-primary">
+                  {calcSleepDuration(todaySleep.bedtime, todaySleep.wakeTime)}h
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {todaySleep.bedtime} → {todaySleep.wakeTime}
+                </p>
+                <div className="mt-2">
+                  {SLEEP_QUALITY_OPTIONS.find((q) => q.value === todaySleep.quality)?.emoji}{" "}
+                  <span className={SLEEP_QUALITY_OPTIONS.find((q) => q.value === todaySleep.quality)?.color}>
+                    睡眠质量{todaySleep.quality}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-bold text-muted-foreground">还未记录今日睡眠</h2>
+                <p className="text-sm text-muted-foreground mt-1">点击下方按钮记录</p>
+              </>
+            )}
+          </div>
+
+          <button
+            onClick={() => setShowAddSleep(true)}
+            className="glass-button-outline py-2 text-sm flex items-center justify-center gap-2 fade-in stagger-3"
+          >
+            <Plus size={16} /> 记录睡眠
+          </button>
+
+          {showAddSleep && (
+            <div className="glass-card p-4 flex flex-col gap-3 slide-up">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">入睡时间</p>
+                  <input
+                    type="time"
+                    value={newSleep.bedtime}
+                    onChange={(e) => setNewSleep({ ...newSleep, bedtime: e.target.value })}
+                    className="glass-input px-3 py-2 text-sm w-full"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">起床时间</p>
+                  <input
+                    type="time"
+                    value={newSleep.wakeTime}
+                    onChange={(e) => setNewSleep({ ...newSleep, wakeTime: e.target.value })}
+                    className="glass-input px-3 py-2 text-sm w-full"
+                  />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">睡眠质量</p>
+                <div className="flex gap-2">
+                  {SLEEP_QUALITY_OPTIONS.map((q) => (
+                    <button
+                      key={q.value}
+                      onClick={() => setNewSleep({ ...newSleep, quality: q.value })}
+                      className={`flex-1 py-2 rounded-full text-xs font-medium transition-all ${
+                        newSleep.quality === q.value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {q.emoji} {q.value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={addSleep} className="glass-button flex-1 py-2 text-xs">保存</button>
+                <button onClick={() => setShowAddSleep(false)} className="glass-button-outline flex-1 py-2 text-xs">取消</button>
+              </div>
+            </div>
+          )}
+
+          {recentSleep.length > 0 && (
+            <div className="glass-card p-4 fade-in stagger-4">
+              <h3 className="text-sm font-bold mb-3">睡眠趋势</h3>
+              <div className="flex items-end gap-1 h-24">
+                {recentSleep.slice(0, 7).reverse().map((r, i) => {
+                  const hours = calcSleepDuration(r.bedtime, r.wakeTime);
+                  const height = Math.max(8, Math.min(100, (hours / 10) * 100));
+                  const qualityColor =
+                    r.quality === "好" ? "bg-green-400" : r.quality === "一般" ? "bg-yellow-400" : "bg-red-400";
+                  const dayLabel = new Date(r.date).toLocaleDateString("zh-CN", { weekday: "narrow" });
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-[9px] text-muted-foreground">{hours}h</span>
+                      <div
+                        className={`w-full rounded-t-md transition-all duration-500 ${qualityColor}`}
+                        style={{ height: `${height}%` }}
+                      />
+                      <span className="text-[9px] text-muted-foreground">{dayLabel}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-3 mt-2 justify-center">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded bg-green-400" />
+                  <span className="text-[9px] text-muted-foreground">好</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded bg-yellow-400" />
+                  <span className="text-[9px] text-muted-foreground">一般</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded bg-red-400" />
+                  <span className="text-[9px] text-muted-foreground">差</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {recentSleep.length > 0 && (
+            <div className="glass-card p-4 fade-in stagger-5">
+              <h3 className="text-sm font-bold mb-3">历史记录</h3>
+              <div className="flex flex-col gap-2">
+                {recentSleep.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{r.date}</span>
+                      <span>{r.bedtime} → {r.wakeTime}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-primary font-medium">{calcSleepDuration(r.bedtime, r.wakeTime)}h</span>
+                      <span>{SLEEP_QUALITY_OPTIONS.find((q) => q.value === r.quality)?.emoji}</span>
+                      <button onClick={() => deleteSleep(r.id)} className="text-muted-foreground hover:text-red-500 text-xs">✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}
 
       {activeTab === "period" && (
         <div className="flex flex-col gap-4">
-          <div className="glass-card p-6 text-center">
-            <p className="text-5xl mb-3">🌸</p>
-            <h2 className="text-lg font-bold text-primary">生理期追踪</h2>
-            {nextPeriodDate && (
-              <p className="text-sm text-muted-foreground mt-1">
-                预计下次经期还有 {Math.max(0, Math.ceil((nextPeriodDate.getTime() - Date.now()) / 86400000))} 天
-              </p>
-            )}
-          </div>
-
-          <button onClick={() => setShowAddPeriod(true)} className="glass-button-outline py-2 text-sm flex items-center justify-center gap-2"><Plus size={16} /> 记录经期</button>
-
-          {showAddPeriod && (
-            <div className="glass-card p-4 flex flex-col gap-3">
-              <input type="date" value={newPeriod.startDate} onChange={(e) => setNewPeriod({ ...newPeriod, startDate: e.target.value })} className="glass-input px-3 py-2 text-sm" />
-              <input type="number" value={newPeriod.cycleDays} onChange={(e) => setNewPeriod({ ...newPeriod, cycleDays: Number(e.target.value) })} placeholder="周期天数" className="glass-input px-3 py-2 text-sm" />
-              <input type="text" value={newPeriod.symptoms} onChange={(e) => setNewPeriod({ ...newPeriod, symptoms: e.target.value })} placeholder="症状（可选）" className="glass-input px-3 py-2 text-sm" />
-              <div className="flex gap-2">
-                <button onClick={addPeriodRecord} className="glass-button flex-1 py-2 text-xs">保存</button>
-                <button onClick={() => setShowAddPeriod(false)} className="glass-button-outline flex-1 py-2 text-xs">取消</button>
-              </div>
+          <Link href="/health/period" className="glass-card p-5 flex items-center gap-4 fade-in stagger-2">
+            <p className="text-4xl">🌸</p>
+            <div className="flex-1">
+              <h2 className="text-lg font-bold">经期管理</h2>
+              {periodPrediction.daysUntil !== null ? (
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  预计下次经期还有 {periodPrediction.daysUntil} 天
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-0.5">点击进入详细管理</p>
+              )}
             </div>
-          )}
+            <ChevronRight size={20} className="text-muted-foreground" />
+          </Link>
 
-          {lastPeriod && (
-            <div className="glass-card p-4">
-              <h3 className="text-sm font-bold mb-3">AI 预测</h3>
+          {periodPrediction.daysUntil !== null && (
+            <div className="glass-card p-4 fade-in stagger-3">
+              <h3 className="text-sm font-bold mb-3">经期预测</h3>
               <div className="flex flex-col gap-2 text-sm">
-                <div className="flex justify-between"><span>上次经期</span><span className="text-primary">{new Date(lastPeriod.startDate).toLocaleDateString()}</span></div>
-                <div className="flex justify-between"><span>周期</span><span className="text-muted-foreground">{lastPeriod.cycleDays} 天</span></div>
-                {nextPeriodDate && <div className="flex justify-between"><span>下次预计</span><span className="text-primary">{nextPeriodDate.toLocaleDateString()}</span></div>}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">下次经期</span>
+                  <span className="text-primary font-medium">{periodPrediction.nextDate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">倒计时</span>
+                  <span className="text-primary font-medium">{periodPrediction.daysUntil} 天</span>
+                </div>
               </div>
             </div>
           )}
 
-          <div className="glass-card p-4">
+          <div className="glass-card p-4 fade-in stagger-4">
             <h3 className="text-sm font-bold mb-3">健康建议</h3>
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
               <p>🥗 饮食：多补充铁质和维生素B</p>

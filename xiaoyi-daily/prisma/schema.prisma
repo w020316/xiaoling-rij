@@ -185,6 +185,8 @@ model PeriodRecord {
   endDate     DateTime?
   cycleDays   Int      @default(28)
   symptoms    String?
+  flowLevel   String?
+  notes       String?
   userId      String?
   createdAt   DateTime @default(now())
 

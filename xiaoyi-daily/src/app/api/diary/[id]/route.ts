@@ -16,6 +16,31 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const diary = await prisma.diary.update({
+      where: { id },
+      data: {
+        ...(body.title !== undefined && { title: body.title }),
+        ...(body.content !== undefined && { content: body.content }),
+        ...(body.tags !== undefined && { tags: body.tags }),
+        ...(body.mood !== undefined && { mood: body.mood }),
+        ...(body.weather !== undefined && { weather: body.weather }),
+        ...(body.location !== undefined && { location: body.location }),
+      },
+    });
+    return NextResponse.json(diary);
+  } catch (error) {
+    console.error("Update diary error:", error);
+    return NextResponse.json({ error: "更新失败" }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
