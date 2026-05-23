@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function PATCH(
+export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
-    const todo = await prisma.todo.update({
-      where: { id },
-      data: body,
-    });
-    return NextResponse.json(todo);
+    const diary = await prisma.diary.findUnique({ where: { id } });
+    if (!diary) return NextResponse.json({ error: "未找到" }, { status: 404 });
+    return NextResponse.json(diary);
   } catch (error) {
-    console.error("Update todo error:", error);
-    return NextResponse.json({ error: "更新失败" }, { status: 500 });
+    console.error("Get diary error:", error);
+    return NextResponse.json({ error: "获取失败" }, { status: 500 });
   }
 }
 
@@ -25,10 +22,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await prisma.todo.delete({ where: { id } });
+    await prisma.diary.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete todo error:", error);
+    console.error("Delete diary error:", error);
     return NextResponse.json({ error: "删除失败" }, { status: 500 });
   }
 }

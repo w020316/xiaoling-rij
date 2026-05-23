@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 import {
@@ -26,12 +27,61 @@ function getDailyQuote() {
   return dailyQuotes[dayOfYear % dailyQuotes.length];
 }
 
+interface UserStats {
+  diaryCount: number;
+  photoCount: number;
+  checkInDays: number;
+  todoCount: number;
+  pendingTodoCount: number;
+}
+
+interface CoupleData {
+  id: string;
+  startDate: string;
+  inviteCode: string;
+}
+
 export default function Home() {
   const { theme, setTheme } = useTheme();
-  const today = new Date();
-  const coupleStart = new Date("2025-05-12");
-  const coupleDays = differenceInDays(today, coupleStart);
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [couple, setCouple] = useState<CoupleData | null>(null);
+  const [todayMood, setTodayMood] = useState<string | null>(null);
+  const [checkedIn, setCheckedIn] = useState(false);
   const quote = getDailyQuote();
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/user/stats").then((r) => r.json()),
+      fetch("/api/couple").then((r) => r.json()),
+      fetch("/api/emotion").then((r) => r.json()),
+    ]).then(([statsData, coupleData, emotionData]) => {
+      setStats(statsData);
+      setCouple(coupleData);
+      if (emotionData) setTodayMood(emotionData.mood);
+    });
+  }, []);
+
+  async function handleCheckIn() {
+    const res = await fetch("/api/checkin", { method: "POST" });
+    const data = await res.json();
+    if (data.success) {
+      setCheckedIn(true);
+      setStats((prev) => prev ? { ...prev, checkInDays: data.checkInDays } : prev);
+    }
+  }
+
+  async function handleMoodSelect(mood: string, score: number) {
+    setTodayMood(mood);
+    await fetch("/api/emotion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mood, score }),
+    });
+  }
+
+  const coupleDays = couple
+    ? differenceInDays(new Date(), new Date(couple.startDate))
+    : 0;
 
   const themes = [
     { key: "theme-kuromi" as const, label: "库洛米", color: "bg-purple-900", emoji: "💜" },
@@ -40,16 +90,27 @@ export default function Home() {
     { key: "theme-dark" as const, label: "暗黑", color: "bg-gray-800", emoji: "🌙" },
   ];
 
+  const moods = [
+    { emoji: "😊", label: "开心", score: 9 },
+    { emoji: "😌", label: "平静", score: 7 },
+    { emoji: "🥰", label: "甜蜜", score: 10 },
+    { emoji: "😢", label: "难过", score: 3 },
+    { emoji: "😤", label: "生气", score: 2 },
+  ];
+
   return (
     <main className="min-h-screen p-5 flex flex-col gap-5 pb-28">
       <header className="flex items-center justify-between pt-2">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-2xl float-animation">
+          <button onClick={handleCheckIn} className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-2xl float-animation">
             🐱
-          </div>
+          </button>
           <div>
             <h1 className="text-lg font-bold">小林</h1>
-            <p className="text-xs text-muted-foreground">连续打卡 11 天 🔥</p>
+            <p className="text-xs text-muted-foreground">
+              连续打卡 {stats?.checkInDays || 0} 天 🔥
+              {checkedIn && <span className="text-primary ml-1">✓今日已打卡</span>}
+            </p>
           </div>
         </div>
         <div className="glass-card px-3 py-1.5 flex items-center gap-1.5 text-sm">
@@ -64,9 +125,11 @@ export default function Home() {
         <h2 className="text-4xl font-bold text-primary flex items-end justify-center gap-1">
           第 <span className="text-5xl">{coupleDays}</span> 天
         </h2>
-        <p className="text-xs text-muted-foreground mt-2">
-          {format(coupleStart, "yyyy年MM月dd日")} 至今
-        </p>
+        {couple && (
+          <p className="text-xs text-muted-foreground mt-2">
+            {format(new Date(couple.startDate), "yyyy年MM月dd日")} 至今
+          </p>
+        )}
       </div>
 
       <div className="glass-card p-4 text-center">
@@ -81,7 +144,9 @@ export default function Home() {
             <CheckSquare size={22} />
           </div>
           <span className="font-medium text-sm">今日待办</span>
-          <span className="text-xs text-muted-foreground">3 项待完成</span>
+          <span className="text-xs text-muted-foreground">
+            {stats?.pendingTodoCount || 0} 项待完成
+          </span>
         </Link>
 
         <Link href="/diary" className="glass-card p-4 flex flex-col items-center gap-2">
@@ -92,7 +157,7 @@ export default function Home() {
           <span className="text-xs text-muted-foreground">记录心情</span>
         </Link>
 
-        <Link href="/calorie" className="glass-card p-4 flex flex-col items-center gap-2">
+        <Link href="/health" className="glass-card p-4 flex flex-col items-center gap-2">
           <div className="p-2.5 bg-orange-500/10 text-orange-500 rounded-xl">
             <Droplets size={22} />
           </div>
@@ -114,14 +179,18 @@ export default function Home() {
           <h3 className="text-sm font-bold flex items-center gap-2">
             <Smile size={16} className="text-primary" /> 今日心情
           </h3>
+          {todayMood && <span className="text-lg">{todayMood}</span>}
         </div>
         <div className="flex justify-around">
-          {["😊", "😌", "🥰", "😢", "😤"].map((emoji, i) => (
+          {moods.map((m) => (
             <button
-              key={i}
-              className="text-2xl hover:scale-125 transition-transform active:scale-95 p-1"
+              key={m.emoji}
+              onClick={() => handleMoodSelect(m.emoji, m.score)}
+              className={`text-2xl hover:scale-125 transition-transform active:scale-95 p-1 ${
+                todayMood === m.emoji ? "scale-110" : ""
+              }`}
             >
-              {emoji}
+              {m.emoji}
             </button>
           ))}
         </div>
