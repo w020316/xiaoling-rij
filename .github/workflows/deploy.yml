@@ -1,41 +1,32 @@
-name: Deploy Love Daily to Vercel
+name: Deploy to Vercel
 
 on:
   push:
     branches: [main]
-  paths: ["xiaoyi-daily/**"]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
-
-      - name: Install dependencies
+      - name: Install
         working-directory: xiaoyi-daily
         run: npm install
-
       - name: Generate Prisma Client
         working-directory: xiaoyi-daily
         run: npx prisma generate
-
-      - name: Build Next.js
+      - name: Build
         working-directory: xiaoyi-daily
         run: npx next build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
-
-      - name: Deploy to Vercel
+      - name: Deploy
         working-directory: xiaoyi-daily
         run: vercel . --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --env DATABASE_URL="${{ secrets.DATABASE_URL }}" --env DEEPSEEK_API_KEY="${{ secrets.DEEPSEEK_API_KEY }}"
