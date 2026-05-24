@@ -37,6 +37,8 @@ export default function GoodnightPage() {
   const [summary, setSummary] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [studyMinutes, setStudyMinutes] = useState<number | null>(null);
+  const [exerciseMinutes, setExerciseMinutes] = useState<number | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -53,6 +55,23 @@ export default function GoodnightPage() {
       const emotionData = await emotionRes.json();
       setCompletedTodos(Array.isArray(todoData) ? todoData.filter((t: Todo) => t.isDone) : []);
       setEmotion(emotionData);
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const exerciseSaved = localStorage.getItem("exercise-records");
+        if (exerciseSaved) {
+          const records = JSON.parse(exerciseSaved);
+          const todayRecords = records.filter((r: any) => r.date === today);
+          const totalMin = todayRecords.reduce((s: number, r: any) => s + r.duration, 0);
+          setExerciseMinutes(totalMin > 0 ? totalMin : null);
+        }
+        const studySaved = localStorage.getItem("study-records");
+        if (studySaved) {
+          const records = JSON.parse(studySaved);
+          const todayRecords = records.filter((r: any) => r.date === today);
+          const totalMin = todayRecords.reduce((s: number, r: any) => s + r.duration, 0);
+          setStudyMinutes(totalMin > 0 ? totalMin : null);
+        }
+      } catch {}
     } catch {
     } finally {
       setLoading(false);
@@ -71,7 +90,10 @@ export default function GoodnightPage() {
         ? `心情：${emotion.mood}，情绪分数：${emotion.score}/10${emotion.note ? `，备注：${emotion.note}` : ""}`
         : "暂无情绪记录";
 
-      const userMessage = `${GOODNIGHT_PROMPT}\n\n以下是今日数据：\n已完成任务：\n${todoList}\n学习时间：2小时30分钟\n运动情况：30分钟慢跑\n情绪：${emotionInfo}`;
+      const studyInfo = studyMinutes !== null ? `${Math.floor(studyMinutes / 60)}小时${studyMinutes % 60 > 0 ? `${studyMinutes % 60}分钟` : ""}` : "暂无学习记录";
+      const exerciseInfo = exerciseMinutes !== null ? `${exerciseMinutes}分钟运动` : "暂无运动记录";
+
+      const userMessage = `${GOODNIGHT_PROMPT}\n\n以下是今日数据：\n已完成任务：\n${todoList}\n学习时间：${studyInfo}\n运动情况：${exerciseInfo}\n情绪：${emotionInfo}`;
 
       const res = await fetch("/api/ai/chat", {
         method: "POST",
@@ -124,14 +146,14 @@ export default function GoodnightPage() {
       icon: <BookOpen size={18} className="text-blue-500" />,
       emoji: "📚",
       title: "学习时间",
-      content: "2小时30分钟",
+      content: studyMinutes !== null ? `${Math.floor(studyMinutes / 60)}小时${studyMinutes % 60 > 0 ? `${studyMinutes % 60}分钟` : ""}` : "今天还没有记录学习哦～",
       skeleton: false,
     },
     {
       icon: <Activity size={18} className="text-orange-500" />,
       emoji: "🏃",
       title: "运动情况",
-      content: "30分钟慢跑",
+      content: exerciseMinutes !== null ? `${exerciseMinutes}分钟运动` : "今天还没有运动哦～",
       skeleton: false,
     },
     {

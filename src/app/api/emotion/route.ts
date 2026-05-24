@@ -18,16 +18,19 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const { searchParams } = new URL(request.url);
+    const days = parseInt(searchParams.get("days") || "1");
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
     const records = await prisma.emotionRecord.findMany({
-      where: { createdAt: { gte: today } },
+      where: { createdAt: { gte: since } },
       orderBy: { createdAt: "desc" },
-      take: 1,
     });
-    return NextResponse.json(records[0] || null);
+    if (days === 1) return NextResponse.json(records[0] || null);
+    return NextResponse.json(records);
   } catch (error) {
     console.error("Get emotion error:", error);
     return NextResponse.json(null);

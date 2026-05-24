@@ -213,6 +213,7 @@ model Schedule {
   timeEnd   String
   title     String
   dayOfWeek Int      @default(1)
+  classroom String?
   createdAt DateTime @default(now())
 }
 

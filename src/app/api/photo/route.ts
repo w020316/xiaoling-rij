@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 export async function GET() {
   try {
@@ -28,19 +26,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "请选择照片" }, { status: 400 });
     }
 
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: "照片不能超过5MB" }, { status: 400 });
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-
-    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-    const filePath = path.join(uploadDir, fileName);
-    await writeFile(filePath, buffer);
+    const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
 
     const photo = await prisma.photo.create({
       data: {
-        url: `/uploads/${fileName}`,
+        url: base64,
         description: description || null,
         location: location || null,
         photoTime: photoTime ? new Date(photoTime) : null,

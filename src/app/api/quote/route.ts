@@ -21,8 +21,8 @@ export async function GET() {
     });
     const data = await res.json();
     const quote = data.choices?.[0]?.message?.content?.trim() || "心存温柔，山河浪漫。";
-    return NextResponse.json({ quote, date: today });
+    return NextResponse.json({ content: quote, date: today });
   } catch {
-    return NextResponse.json({ quote: "心存温柔，山河浪漫。", date: new Date().toISOString().slice(0, 10) });
+    return NextResponse.json({ content: "心存温柔，山河浪漫。", date: new Date().toISOString().slice(0, 10) });
   }
 }

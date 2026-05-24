@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Sparkles, X, ImagePlus, MapPin, CloudSun, Tag, Smile } from "lucide-react";
 import Link from "next/link";
 
@@ -24,6 +25,7 @@ const WEATHERS = [
 ];
 
 export default function NewDiaryPage() {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [mood, setMood] = useState("");
@@ -129,7 +131,7 @@ export default function NewDiaryPage() {
           aiContent: aiContent || null,
         }),
       });
-      window.location.href = "/diary";
+      router.push("/diary");
     } catch {}
   }
 

@@ -1,6 +1,24 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export async function GET() {
+  try {
+    const user = await prisma.user.findFirst();
+    if (!user || !user.lastCheckIn) {
+      return NextResponse.json({ checkedIn: false, checkInDays: 0 });
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lastDay = new Date(user.lastCheckIn);
+    lastDay.setHours(0, 0, 0, 0);
+    const checkedIn = lastDay.getTime() === today.getTime();
+    return NextResponse.json({ checkedIn, checkInDays: user.checkInDays || 0 });
+  } catch (error) {
+    console.error("Get checkin status error:", error);
+    return NextResponse.json({ checkedIn: false, checkInDays: 0 });
+  }
+}
+
 export async function POST() {
   try {
     const user = await prisma.user.findFirst();
@@ -15,7 +33,7 @@ export async function POST() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const lastCheckIn = user.lastCheckIn ? new Date(user.lastCheckIn) : null;
-    const lastCheckInDay = lastCheckIn ? new Date(lastCheckIn.setHours(0, 0, 0, 0)) : null;
+    const lastCheckInDay = lastCheckIn ? new Date(new Date(lastCheckIn).setHours(0, 0, 0, 0)) : null;
 
     if (lastCheckInDay && lastCheckInDay.getTime() === today.getTime()) {
       return NextResponse.json({ checkInDays: user.checkInDays, success: false, message: "今日已打卡" });

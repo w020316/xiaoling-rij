@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
         timeEnd: body.timeEnd,
         title: body.title,
         dayOfWeek: body.dayOfWeek || 1,
+        classroom: body.classroom || null,
       },
     });
     return NextResponse.json(schedule);

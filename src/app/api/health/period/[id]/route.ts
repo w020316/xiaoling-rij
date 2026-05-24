@@ -8,18 +8,18 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const photo = await prisma.photo.update({
+    const record = await prisma.periodRecord.update({
       where: { id },
       data: {
-        ...(body.isFavorite !== undefined && { isFavorite: body.isFavorite }),
-        ...(body.description !== undefined && { description: body.description }),
-        ...(body.location !== undefined && { location: body.location }),
-        ...(body.category !== undefined && { category: body.category }),
+        ...(body.startDate !== undefined && { startDate: new Date(body.startDate) }),
+        ...(body.endDate !== undefined && { endDate: body.endDate ? new Date(body.endDate) : null }),
+        ...(body.cycleDays !== undefined && { cycleDays: body.cycleDays }),
+        ...(body.symptoms !== undefined && { symptoms: body.symptoms }),
       },
     });
-    return NextResponse.json(photo);
+    return NextResponse.json(record);
   } catch (error) {
-    console.error("Update photo error:", error);
+    console.error("Update period error:", error);
     return NextResponse.json({ error: "更新失败" }, { status: 500 });
   }
 }
@@ -30,10 +30,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await prisma.photo.delete({ where: { id } });
+    await prisma.periodRecord.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete photo error:", error);
+    console.error("Delete period error:", error);
     return NextResponse.json({ error: "删除失败" }, { status: 500 });
   }
 }

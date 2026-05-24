@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json(todos);
   } catch (error) {
     console.error("Get todos error:", error);
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json([], { status: 500 });
   }
 }
 

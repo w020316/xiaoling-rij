@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BookHeart, Plus, Sparkles, MapPin, CloudSun, Tag } from "lucide-react";
+import { BookHeart, Plus, Sparkles, MapPin, CloudSun, Tag, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 interface Diary {
@@ -19,12 +19,19 @@ interface Diary {
 export default function DiaryPage() {
   const [diaries, setDiaries] = useState<Diary[]>([]);
   const [filter, setFilter] = useState<"all" | "text" | "ai">("all");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/diary")
       .then((r) => r.json())
       .then(setDiaries);
   }, []);
+
+  async function handleDelete(id: string) {
+    await fetch(`/api/diary/${id}`, { method: "DELETE" });
+    setDiaries((prev) => prev.filter((d) => d.id !== id));
+    setDeleteId(null);
+  }
 
   const filtered = diaries.filter((d) => {
     if (filter === "all") return true;
@@ -68,7 +75,7 @@ export default function DiaryPage() {
 
       <div className="flex flex-col gap-4">
         {filtered.map((diary) => (
-          <Link href={`/diary/${diary.id}`} key={diary.id} className="glass-card p-4">
+          <Link href={`/diary/${diary.id}`} key={diary.id} className="glass-card p-4 relative group">
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-bold text-base">{diary.title || "无标题日记"}</h3>
               <div className="flex items-center gap-1.5">
@@ -94,6 +101,19 @@ export default function DiaryPage() {
                 </span>
               ))}
             </div>
+            {deleteId === diary.id ? (
+              <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center gap-2 rounded-2xl z-10">
+                <button onClick={(e) => { e.preventDefault(); handleDelete(diary.id); }} className="px-3 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">删除</button>
+                <button onClick={(e) => { e.preventDefault(); setDeleteId(null); }} className="glass-button-outline px-3 py-1.5 text-xs">取消</button>
+              </div>
+            ) : (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteId(diary.id); }}
+                className="absolute top-3 right-3 p-1.5 rounded-lg text-muted-foreground/40 hover:text-red-500 hover:bg-red-50/50 opacity-0 group-hover:opacity-100 transition-all"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
           </Link>
         ))}
 

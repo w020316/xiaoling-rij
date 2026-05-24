@@ -60,6 +60,8 @@ export default function WeeklyPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [analysis, setAnalysis] = useState("");
+  const [studyHours, setStudyHours] = useState<number | null>(null);
+  const [exerciseHours, setExerciseHours] = useState<number | null>(null);
 
   useEffect(() => {
     fetchWeekData();
@@ -69,17 +71,42 @@ export default function WeeklyPage() {
     setLoading(true);
     try {
       const { monday } = getWeekRange();
-      const [todoRes] = await Promise.all([
+      const [todoRes, emotionRes] = await Promise.all([
         fetch("/api/todo"),
+        fetch("/api/emotion?days=7"),
       ]);
       const todoData = await todoRes.json();
+      const emotionData = await emotionRes.json();
       const allTodos: Todo[] = Array.isArray(todoData) ? todoData : [];
       const weekTodos = allTodos.filter((t) => {
         const created = new Date(t.createdAt);
         return created >= monday;
       });
       setTodos(weekTodos);
-      setEmotions([]);
+      const allEmotions: EmotionRecord[] = Array.isArray(emotionData) ? emotionData : [];
+      const weekEmotions = allEmotions.filter((e) => {
+        const created = new Date(e.createdAt);
+        return created >= monday;
+      });
+      setEmotions(weekEmotions);
+      try {
+        const { monday } = getWeekRange();
+        const mondayStr = monday.toISOString().slice(0, 10);
+        const exerciseSaved = localStorage.getItem("exercise-records");
+        if (exerciseSaved) {
+          const records = JSON.parse(exerciseSaved);
+          const weekRecords = records.filter((r: any) => r.date >= mondayStr);
+          const totalMin = weekRecords.reduce((s: number, r: any) => s + r.duration, 0);
+          setExerciseHours(Math.round((totalMin / 60) * 10) / 10);
+        }
+        const studySaved = localStorage.getItem("study-records");
+        if (studySaved) {
+          const records = JSON.parse(studySaved);
+          const weekRecords = records.filter((r: any) => r.date >= mondayStr);
+          const totalMin = weekRecords.reduce((s: number, r: any) => s + r.duration, 0);
+          setStudyHours(Math.round((totalMin / 60) * 10) / 10);
+        }
+      } catch {}
     } catch {
     } finally {
       setLoading(false);
@@ -92,11 +119,14 @@ export default function WeeklyPage() {
 
   const weekDays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
   const moodScores = weekDays.map((_, i) => {
-    if (emotions.length === 0) {
-      return Math.max(1, Math.min(10, 5 + Math.floor(Math.random() * 4) - 2));
-    }
-    return 5;
+    const dayDate = new Date(getWeekRange().monday);
+    dayDate.setDate(dayDate.getDate() + i);
+    const dayStr = dayDate.toISOString().slice(0, 10);
+    const dayEmotions = emotions.filter((e) => e.createdAt.slice(0, 10) === dayStr);
+    if (dayEmotions.length === 0) return 0;
+    return dayEmotions.reduce((sum, e) => sum + e.score, 0) / dayEmotions.length;
   });
+  const hasMoodData = moodScores.some((s) => s > 0);
   const maxScore = 10;
 
   const stats = [
@@ -113,20 +143,20 @@ export default function WeeklyPage() {
     {
       emoji: "📚",
       title: "学习时长",
-      value: "12h",
+      value: studyHours !== null ? `${studyHours}h` : "暂无记录",
       detail: "本周累计",
       trend: "up",
-      trendValue: "+3h",
+      trendValue: studyHours !== null ? (studyHours >= 10 ? "良好" : "需加油") : "",
       color: "text-blue-500",
       bg: "bg-blue-500/10",
     },
     {
       emoji: "🏃",
       title: "运动时长",
-      value: "3.5h",
+      value: exerciseHours !== null ? `${exerciseHours}h` : "暂无记录",
       detail: "本周累计",
-      trend: "down",
-      trendValue: "-0.5h",
+      trend: exerciseHours !== null ? (exerciseHours >= 3 ? "up" : "down") : "up",
+      trendValue: exerciseHours !== null ? (exerciseHours >= 3 ? "达标" : "需加油") : "",
       color: "text-orange-500",
       bg: "bg-orange-500/10",
     },
@@ -154,7 +184,7 @@ export default function WeeklyPage() {
         ? emotions.map((e) => `${e.mood}(${e.score}/10)`).join("、")
         : "本周暂无情绪记录";
 
-      const userMessage = `${WEEKLY_PROMPT}\n\n以下是本周数据：\n任务情况：${todoInfo}\n学习时长：12小时\n运动时长：3.5小时\n情绪记录：${emotionInfo}`;
+      const userMessage = `${WEEKLY_PROMPT}\n\n以下是本周数据：\n任务情况：${todoInfo}\n学习时长：${studyHours !== null ? `${studyHours}小时` : "暂无记录"}\n运动时长：${exerciseHours !== null ? `${exerciseHours}小时` : "暂无记录"}\n情绪记录：${emotionInfo}`;
 
       const res = await fetch("/api/ai/chat", {
         method: "POST",
@@ -235,11 +265,13 @@ export default function WeeklyPage() {
             <div className="skeleton h-4 w-full" />
             <div className="skeleton h-4 w-5/6" />
           </div>
+        ) : !hasMoodData ? (
+          <p className="text-sm text-muted-foreground text-center py-4">暂无数据</p>
         ) : (
           <div className="flex items-end gap-2 h-24">
             {weekDays.map((day, i) => {
               const score = moodScores[i];
-              const height = (score / maxScore) * 100;
+              const height = score > 0 ? (score / maxScore) * 100 : 0;
               const isToday = i === (new Date().getDay() + 6) % 7;
               return (
                 <div key={day} className="flex-1 flex flex-col items-center gap-1">

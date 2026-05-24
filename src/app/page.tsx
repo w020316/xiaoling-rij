@@ -10,24 +10,6 @@ import {
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 
-const dailyQuotes = [
-  "心存温柔，山河浪漫。",
-  "每一天都值得被温柔以待。",
-  "你笑起来真好看，像春天的花一样。",
-  "生活明朗，万物可爱。",
-  "慢慢来，比较快。",
-  "愿你的每一天都闪闪发光。",
-  "今天也要好好爱自己呀。",
-  "世界很大，幸福很小。",
-];
-
-function getDailyQuote() {
-  const dayOfYear = Math.floor(
-    (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
-  );
-  return dailyQuotes[dayOfYear % dailyQuotes.length];
-}
-
 interface UserStats {
   diaryCount: number;
   photoCount: number;
@@ -87,7 +69,9 @@ export default function Home() {
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [waterCups, setWaterCupsState] = useState(0);
   const [loading, setLoading] = useState(true);
-  const quote = getDailyQuote();
+  const [nickname, setNickname] = useState("");
+  const [quote, setQuote] = useState("");
+  const [exerciseMinutes, setExerciseMinutes] = useState(0);
 
   useEffect(() => {
     setWaterCupsState(getWaterCups());
@@ -100,7 +84,9 @@ export default function Home() {
       fetch("/api/emotion").then((r) => r.json()),
       fetch("/api/weather").then((r) => r.json()),
       fetch("/api/schedule").then((r) => r.json()),
-    ]).then(([statsData, coupleData, emotionData, weatherData, scheduleData]) => {
+      fetch("/api/user").then((r) => r.json()),
+      fetch("/api/quote").then((r) => r.json()),
+    ]).then(([statsData, coupleData, emotionData, weatherData, scheduleData, userData, quoteData]) => {
       setStats(statsData);
       setCouple(coupleData);
       if (emotionData) setTodayMood(emotionData.mood);
@@ -113,6 +99,17 @@ export default function Home() {
         a.timeStart.localeCompare(b.timeStart)
       );
       setSchedules(todaySchedules);
+      if (userData?.nickname) setNickname(userData.nickname);
+      if (quoteData?.content) setQuote(quoteData.content);
+      try {
+        const saved = localStorage.getItem("exercise-records");
+        if (saved) {
+          const records = JSON.parse(saved);
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const todayRecords = records.filter((r: any) => r.date === todayStr);
+          setExerciseMinutes(todayRecords.reduce((s: number, r: any) => s + r.duration, 0));
+        }
+      } catch {}
       setLoading(false);
     }).catch(() => {
       setLoading(false);
@@ -208,7 +205,7 @@ export default function Home() {
             🐱
           </button>
           <div>
-            <h1 className="text-lg font-bold">小林</h1>
+            <h1 className="text-lg font-bold">{nickname || "小林"}</h1>
             <p className="text-xs text-muted-foreground">
               连续打卡 {stats?.checkInDays || 0} 天 🔥
               {checkedIn && <span className="text-primary ml-1">✓今日已打卡</span>}
@@ -318,7 +315,7 @@ export default function Home() {
             <Dumbbell size={22} />
           </div>
           <span className="font-medium text-sm">运动提醒</span>
-          <span className="text-xs text-muted-foreground">今日 30 分钟</span>
+          <span className="text-xs text-muted-foreground">今日 {exerciseMinutes} 分钟</span>
         </Link>
       </div>
 
@@ -408,7 +405,7 @@ export default function Home() {
       </div>
 
       <footer className="text-center text-[10px] text-muted-foreground/50 pt-2 pb-4">
-        v2.0.0
+        v2.1.0
       </footer>
     </main>
   );

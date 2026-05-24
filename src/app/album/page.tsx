@@ -122,7 +122,7 @@ export default function AlbumPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `用户想找照片，关键词是：${searchQuery}。请帮用户描述可能匹配的照片场景。`,
+          messages: [{ role: "user", content: `请根据以下描述找出照片分类关键词，只返回一个简短的分类词：${searchQuery}` }],
         }),
       });
       const data = await res.json();

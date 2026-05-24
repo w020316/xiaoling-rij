@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "sk-28fe47f79b3846fa819bca13b199d983";
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "";
 const DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1";
 
 const SYSTEM_PROMPT = `你是"恋爱日常"App的AI小助手，一个温暖、可爱、善解人意的伙伴。你的特点：

@@ -13,7 +13,7 @@ export async function GET() {
     if (!couple) {
       const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       couple = await prisma.couple.create({
-        data: { inviteCode, startDate: new Date("2025-05-12") },
+        data: { inviteCode },
         include: {
           anniversaries: true,
           wishLists: true,
@@ -24,7 +24,7 @@ export async function GET() {
     return NextResponse.json(couple);
   } catch (error) {
     console.error("Get couple error:", error);
-    return NextResponse.json(null, { status: 200 });
+    return NextResponse.json(null, { status: 500 });
   }
 }
 

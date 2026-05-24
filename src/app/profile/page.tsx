@@ -99,9 +99,12 @@ export default function ProfilePage() {
 
   async function handleCheckIn() {
     try {
-      await fetch("/api/checkin", { method: "POST" });
-      setCheckedIn(true);
-      setStats((prev) => prev ? { ...prev, checkInDays: prev.checkInDays + 1 } : prev);
+      const res = await fetch("/api/checkin", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setCheckedIn(true);
+        setStats((prev) => prev ? { ...prev, checkInDays: prev.checkInDays + 1 } : prev);
+      }
     } catch {}
   }
 
@@ -201,7 +204,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="mt-6 text-center fade-in">
-        <p className="text-xs text-muted-foreground">恋爱日常 v2.0.0</p>
+        <p className="text-xs text-muted-foreground">恋爱日常 v2.1.0</p>
         <p className="text-xs text-muted-foreground mt-1">Made with 💕</p>
       </div>
     </main>

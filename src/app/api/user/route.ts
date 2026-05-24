@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json(user);
   } catch (error) {
     console.error("Get user error:", error);
-    return NextResponse.json({ nickname: "小林", checkInDays: 0 }, { status: 200 });
+    return NextResponse.json({ nickname: "小林", checkInDays: 0 }, { status: 500 });
   }
 }
 

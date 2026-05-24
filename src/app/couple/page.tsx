@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  Heart, Plus, CheckCircle2, Star, Link2
+  Heart, Plus, CheckCircle2, Star, Link2, Trash2
 } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
 
@@ -81,10 +81,10 @@ export default function CouplePage() {
   }
 
   async function toggleWish(id: string, isCompleted: boolean) {
-    await fetch("/api/wishlist", {
+    await fetch(`/api/wishlist/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, isCompleted: !isCompleted }),
+      body: JSON.stringify({ isCompleted: !isCompleted }),
     });
     const res = await fetch("/api/couple");
     setCouple(await res.json());
@@ -104,10 +104,10 @@ export default function CouplePage() {
   }
 
   async function updateSavingsAmount(id: string, current: number) {
-    await fetch("/api/savings", {
+    await fetch(`/api/savings/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, current }),
+      body: JSON.stringify({ current }),
     });
     const res = await fetch("/api/couple");
     setCouple(await res.json());
@@ -220,17 +220,30 @@ export default function CouplePage() {
                     <h3 className="font-medium text-sm">{a.title}</h3>
                     <p className="text-xs text-muted-foreground mt-1">{format(new Date(a.date), "yyyy年MM月dd日")}</p>
                   </div>
-                  <div className="text-right">
-                    {isPast ? (
-                      <p className="text-sm text-primary font-bold">🎉 已过</p>
-                    ) : daysLeft === 0 ? (
-                      <p className="text-sm text-primary font-bold">🎉 今天！</p>
-                    ) : (
-                      <>
-                        <p className="text-lg font-bold text-primary">{daysLeft}</p>
-                        <p className="text-[10px] text-muted-foreground">天后</p>
-                      </>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      {isPast ? (
+                        <p className="text-sm text-primary font-bold">🎉 已过</p>
+                      ) : daysLeft === 0 ? (
+                        <p className="text-sm text-primary font-bold">🎉 今天！</p>
+                      ) : (
+                        <>
+                          <p className="text-lg font-bold text-primary">{daysLeft}</p>
+                          <p className="text-[10px] text-muted-foreground">天后</p>
+                        </>
+                      )}
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!confirm("确定删除此纪念日？")) return;
+                        await fetch(`/api/anniversary/${a.id}`, { method: "DELETE" });
+                        const res = await fetch("/api/couple");
+                        setCouple(await res.json());
+                      }}
+                      className="p-1 text-muted-foreground/40 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -260,11 +273,24 @@ export default function CouplePage() {
           )}
 
           {wishLists.map((wish) => (
-            <button key={wish.id} onClick={() => toggleWish(wish.id, wish.isCompleted)} className={`glass-card p-4 flex items-center gap-3 ${wish.isCompleted ? "opacity-60" : ""}`}>
-              {wish.isCompleted ? <CheckCircle2 size={24} className="text-primary" /> : <Star size={24} className="text-muted-foreground" />}
-              <span className={`flex-1 text-sm text-left ${wish.isCompleted ? "line-through" : ""}`}>{wish.title}</span>
+            <div key={wish.id} className={`glass-card p-4 flex items-center gap-3 ${wish.isCompleted ? "opacity-60" : ""}`}>
+              <button onClick={() => toggleWish(wish.id, wish.isCompleted)}>
+                {wish.isCompleted ? <CheckCircle2 size={24} className="text-primary" /> : <Star size={24} className="text-muted-foreground" />}
+              </button>
+              <span className={`flex-1 text-sm ${wish.isCompleted ? "line-through" : ""}`}>{wish.title}</span>
               {wish.isCompleted && <span className="text-xs text-primary">✅</span>}
-            </button>
+              <button
+                onClick={async () => {
+                  if (!confirm("确定删除此愿望？")) return;
+                  await fetch(`/api/wishlist/${wish.id}`, { method: "DELETE" });
+                  const res = await fetch("/api/couple");
+                  setCouple(await res.json());
+                }}
+                className="p-1 text-muted-foreground/40 hover:text-red-500 transition-colors"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           ))}
 
           {wishLists.length === 0 && !showAddWish && (
@@ -296,7 +322,20 @@ export default function CouplePage() {
               <div key={s.id} className="glass-card p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-medium text-sm">🐷 {s.title}</h3>
-                  <span className="text-xs text-primary font-bold">{percent}%</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-primary font-bold">{percent}%</span>
+                    <button
+                      onClick={async () => {
+                        if (!confirm("确定删除此存钱目标？")) return;
+                        await fetch(`/api/savings/${s.id}`, { method: "DELETE" });
+                        const res = await fetch("/api/couple");
+                        setCouple(await res.json());
+                      }}
+                      className="p-1 text-muted-foreground/40 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
                 <div className="w-full h-2 rounded-full bg-muted overflow-hidden mb-2">
                   <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(percent, 100)}%` }} />

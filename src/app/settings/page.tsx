@@ -203,7 +203,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">GitHub</span>
               <a
-                href="https://github.com"
+                href="https://github.com/w020316/xiaoling-rij"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-primary hover:underline"

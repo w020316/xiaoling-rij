@@ -25,6 +25,24 @@ export default function AiDiaryPage() {
     }
   }
 
+  async function handleSave() {
+    if (!result) return;
+    try {
+      await fetch("/api/diary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: input.slice(0, 20),
+          content: result.diary,
+          diaryType: "ai",
+          tags: ["AI生成"],
+          aiContent: result,
+        }),
+      });
+      window.location.href = "/diary";
+    } catch {}
+  }
+
   return (
     <main className="min-h-screen p-5 pb-28">
       <header className="flex items-center gap-4 mb-5 pt-2">
@@ -92,7 +110,7 @@ export default function AiDiaryPage() {
             >
               重新生成
             </button>
-            <button className="glass-button flex-1 py-2 text-sm">
+            <button onClick={handleSave} className="glass-button flex-1 py-2 text-sm">
               💕 保存日记
             </button>
           </div>

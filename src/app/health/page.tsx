@@ -20,17 +20,28 @@ interface SleepRecord {
   date: string;
 }
 
+interface StudyRecord {
+  id: string;
+  subject: string;
+  duration: number;
+  date: string;
+}
+
 interface PeriodPrediction {
   nextDate: string | null;
   daysUntil: number | null;
 }
 
-type TabKey = "water" | "exercise" | "sleep" | "period";
+type TabKey = "water" | "exercise" | "sleep" | "study" | "period";
 
 const EXERCISE_TYPES = ["跑步", "瑜伽", "游泳", "骑行", "健身", "散步", "其他"];
 const EXERCISE_EMOJIS: Record<string, string> = {
   "跑步": "🏃", "瑜伽": "🧘", "游泳": "🏊", "骑行": "🚴",
   "健身": "💪", "散步": "🚶", "其他": "🏅",
+};
+const STUDY_SUBJECTS = ["数学", "英语", "编程", "阅读", "专业课", "其他"];
+const STUDY_EMOJIS: Record<string, string> = {
+  "数学": "📐", "英语": "🔤", "编程": "💻", "阅读": "📖", "专业课": "📚", "其他": "✏️",
 };
 const SLEEP_QUALITY_OPTIONS = [
   { value: "好", emoji: "😊", color: "text-green-500" },
@@ -67,11 +78,14 @@ export default function HealthPage() {
   const [waterCups, setWaterCups] = useState(0);
   const [exerciseRecords, setExerciseRecords] = useState<ExerciseRecord[]>([]);
   const [sleepRecords, setSleepRecords] = useState<SleepRecord[]>([]);
+  const [studyRecords, setStudyRecords] = useState<StudyRecord[]>([]);
   const [periodPrediction, setPeriodPrediction] = useState<PeriodPrediction>({ nextDate: null, daysUntil: null });
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [showAddSleep, setShowAddSleep] = useState(false);
+  const [showAddStudy, setShowAddStudy] = useState(false);
   const [newExercise, setNewExercise] = useState({ type: "跑步", duration: 30, calories: 100 });
   const [newSleep, setNewSleep] = useState({ bedtime: "23:00", wakeTime: "07:00", quality: "好" });
+  const [newStudy, setNewStudy] = useState({ subject: "编程", duration: 60 });
 
   const loadWater = useCallback(() => {
     const key = `water-cups-${getTodayKey()}`;
@@ -88,6 +102,11 @@ export default function HealthPage() {
   const loadSleep = useCallback(() => {
     const saved = localStorage.getItem("sleep-records");
     if (saved) setSleepRecords(JSON.parse(saved));
+  }, []);
+
+  const loadStudy = useCallback(() => {
+    const saved = localStorage.getItem("study-records");
+    if (saved) setStudyRecords(JSON.parse(saved));
   }, []);
 
   const loadPeriodPrediction = useCallback(async () => {
@@ -108,8 +127,9 @@ export default function HealthPage() {
     loadWater();
     loadExercise();
     loadSleep();
+    loadStudy();
     loadPeriodPrediction();
-  }, [loadWater, loadExercise, loadSleep, loadPeriodPrediction]);
+  }, [loadWater, loadExercise, loadSleep, loadStudy, loadPeriodPrediction]);
 
   function updateWater(cups: number) {
     const clamped = Math.max(0, Math.min(8, cups));
@@ -159,6 +179,26 @@ export default function HealthPage() {
     localStorage.setItem("sleep-records", JSON.stringify(updated));
   }
 
+  function addStudy() {
+    const record: StudyRecord = {
+      id: Date.now().toString(),
+      subject: newStudy.subject,
+      duration: newStudy.duration,
+      date: getTodayKey(),
+    };
+    const updated = [record, ...studyRecords];
+    setStudyRecords(updated);
+    localStorage.setItem("study-records", JSON.stringify(updated));
+    setShowAddStudy(false);
+    setNewStudy({ subject: "编程", duration: 60 });
+  }
+
+  function deleteStudy(id: string) {
+    const updated = studyRecords.filter((r) => r.id !== id);
+    setStudyRecords(updated);
+    localStorage.setItem("study-records", JSON.stringify(updated));
+  }
+
   const todayExercises = exerciseRecords.filter((r) => r.date === getTodayKey());
   const todayTotalMinutes = todayExercises.reduce((s, r) => s + r.duration, 0);
   const todayTotalCalories = todayExercises.reduce((s, r) => s + r.calories, 0);
@@ -179,6 +219,7 @@ export default function HealthPage() {
     { key: "water", label: "💧 喝水" },
     { key: "exercise", label: "🏃 运动" },
     { key: "sleep", label: "😴 睡眠" },
+    { key: "study", label: "📚 学习" },
     { key: "period", label: "🌸 经期" },
   ];
 
@@ -522,6 +563,122 @@ export default function HealthPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === "study" && (
+        <div className="flex flex-col gap-4">
+          <div className="glass-card p-5 text-center fade-in stagger-2">
+            <p className="text-5xl mb-3">📚</p>
+            <h2 className="text-3xl font-bold text-primary">
+              {studyRecords.filter((r) => r.date === getTodayKey()).reduce((s, r) => s + r.duration, 0)}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">分钟学习</p>
+            <div className="flex justify-center gap-4 mt-3">
+              <div className="glass-card px-3 py-2 text-center">
+                <p className="text-sm font-bold text-blue-500">
+                  {studyRecords.filter((r) => r.date === getTodayKey()).length}
+                </p>
+                <p className="text-[10px] text-muted-foreground">次学习</p>
+              </div>
+              <div className="glass-card px-3 py-2 text-center">
+                <p className="text-sm font-bold text-purple-500">
+                  {weekDates.reduce((s, d) => {
+                    return s + studyRecords.filter((r) => r.date === d).reduce((ss, r) => ss + r.duration, 0);
+                  }, 0)}
+                </p>
+                <p className="text-[10px] text-muted-foreground">本周(分钟)</p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowAddStudy(true)}
+            className="glass-button-outline py-2 text-sm flex items-center justify-center gap-2 fade-in stagger-3"
+          >
+            <Plus size={16} /> 记录学习
+          </button>
+
+          {showAddStudy && (
+            <div className="glass-card p-4 flex flex-col gap-3 slide-up">
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">学习科目</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {STUDY_SUBJECTS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setNewStudy({ ...newStudy, subject: s })}
+                      className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        newStudy.subject === s
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {STUDY_EMOJIS[s]} {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">时长(分钟)</p>
+                <input
+                  type="number"
+                  value={newStudy.duration || ""}
+                  onChange={(e) => setNewStudy({ ...newStudy, duration: Number(e.target.value) })}
+                  placeholder="60"
+                  className="glass-input px-3 py-2 text-sm w-full"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={addStudy} className="glass-button flex-1 py-2 text-xs">保存</button>
+                <button onClick={() => setShowAddStudy(false)} className="glass-button-outline flex-1 py-2 text-xs">取消</button>
+              </div>
+            </div>
+          )}
+
+          {studyRecords.filter((r) => r.date === getTodayKey()).length > 0 && (
+            <div className="glass-card p-4 fade-in stagger-3">
+              <h3 className="text-sm font-bold mb-3">今日学习</h3>
+              <div className="flex flex-col gap-2">
+                {studyRecords.filter((r) => r.date === getTodayKey()).map((r) => (
+                  <div key={r.id} className="flex items-center justify-between text-sm">
+                    <span>{STUDY_EMOJIS[r.subject] || "✏️"} {r.subject}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-muted-foreground">{r.duration} 分钟</span>
+                      <button onClick={() => deleteStudy(r.id)} className="text-muted-foreground hover:text-red-500 text-xs">✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="glass-card p-4 fade-in stagger-4">
+            <h3 className="text-sm font-bold mb-3">本周学习</h3>
+            <div className="flex items-end gap-1 h-24">
+              {weekDates.map((date, i) => {
+                const dayLabel = new Date(date).toLocaleDateString("zh-CN", { weekday: "narrow" });
+                const dayMin = studyRecords.filter((r) => r.date === date).reduce((s, r) => s + r.duration, 0);
+                const maxMin = Math.max(...weekDates.map((d) => studyRecords.filter((r) => r.date === d).reduce((s, r) => s + r.duration, 0)), 1);
+                const height = dayMin > 0 ? Math.max(8, (dayMin / maxMin) * 100) : 4;
+                const isToday = date === getTodayKey();
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground">{dayMin > 0 ? dayMin : ""}</span>
+                    <div
+                      className={`w-full rounded-t-md transition-all duration-500 ${
+                        isToday ? "bg-blue-500" : dayMin > 0 ? "bg-blue-500/40" : "bg-muted"
+                      }`}
+                      style={{ height: `${height}%` }}
+                    />
+                    <span className={`text-[9px] ${isToday ? "text-blue-500 font-bold" : "text-muted-foreground"}`}>
+                      {dayLabel}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Apple, Plus, Camera, Sparkles, Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Apple, Plus, Camera, Search, Trash2 } from "lucide-react";
 
 const foodDatabase: Record<string, { calories: number; protein: number; fat: number; carbs: number }> = {
   "鸡胸肉": { calories: 165, protein: 31, fat: 3.6, carbs: 0 },
@@ -21,25 +21,38 @@ const foodDatabase: Record<string, { calories: number; protein: number; fat: num
   "虾": { calories: 99, protein: 24, fat: 0.3, carbs: 0.2 },
 };
 
-interface FoodItem {
-  name: string;
+interface CalorieRecord {
+  id: string;
+  foodName: string;
   calories: number;
   protein: number;
   fat: number;
   carbs: number;
-  meal: string;
+  mealType: string;
 }
 
 export default function CaloriePage() {
   const [search, setSearch] = useState("");
-  const [selectedMeal, setSelectedMeal] = useState("午餐");
-  const [records, setRecords] = useState<FoodItem[]>([
-    { name: "鸡胸肉", calories: 165, protein: 31, fat: 3.6, carbs: 0, meal: "午餐" },
-    { name: "米饭", calories: 232, protein: 4.3, fat: 0.4, carbs: 51, meal: "午餐" },
-    { name: "牛奶", calories: 64, protein: 3.2, fat: 3.2, carbs: 4.8, meal: "早餐" },
-  ]);
+  const [selectedMeal, setSelectedMeal] = useState("lunch");
+  const [records, setRecords] = useState<CalorieRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const meals = ["早餐", "午餐", "晚餐", "加餐"];
+  const meals = [
+    { key: "breakfast", label: "早餐" },
+    { key: "lunch", label: "午餐" },
+    { key: "dinner", label: "晚餐" },
+    { key: "snack", label: "加餐" },
+  ];
+
+  useEffect(() => {
+    fetch("/api/calorie")
+      .then((r) => r.json())
+      .then((data) => {
+        setRecords(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   const filteredFoods = Object.entries(foodDatabase).filter(([name]) =>
     name.includes(search)
@@ -50,12 +63,36 @@ export default function CaloriePage() {
   const totalFat = records.reduce((sum, r) => sum + r.fat, 0);
   const totalCarbs = records.reduce((sum, r) => sum + r.carbs, 0);
 
-  function addFood(name: string) {
+  async function addFood(name: string) {
     const food = foodDatabase[name];
-    if (food) {
-      setRecords([...records, { name, ...food, meal: selectedMeal }]);
-    }
+    if (!food) return;
+    try {
+      const res = await fetch("/api/calorie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          foodName: name,
+          calories: food.calories,
+          protein: food.protein,
+          fat: food.fat,
+          carbs: food.carbs,
+          mealType: selectedMeal,
+        }),
+      });
+      const record = await res.json();
+      setRecords((prev) => [...prev, record]);
+      setSearch("");
+    } catch {}
   }
+
+  async function deleteRecord(id: string) {
+    try {
+      await fetch(`/api/calorie?id=${id}`, { method: "DELETE" });
+      setRecords((prev) => prev.filter((r) => r.id !== id));
+    } catch {}
+  }
+
+  const mealLabel = (key: string) => meals.find((m) => m.key === key)?.label || key;
 
   return (
     <main className="min-h-screen p-5 pb-28">
@@ -86,21 +123,19 @@ export default function CaloriePage() {
       </div>
 
       <div className="flex gap-2 mb-4">
-        <div className="flex gap-2 flex-1">
-          {meals.map((meal) => (
-            <button
-              key={meal}
-              onClick={() => setSelectedMeal(meal)}
-              className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all ${
-                selectedMeal === meal
-                  ? "bg-primary text-primary-foreground"
-                  : "glass-card text-muted-foreground"
-              }`}
-            >
-              {meal}
-            </button>
-          ))}
-        </div>
+        {meals.map((meal) => (
+          <button
+            key={meal.key}
+            onClick={() => setSelectedMeal(meal.key)}
+            className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all ${
+              selectedMeal === meal.key
+                ? "bg-primary text-primary-foreground"
+                : "glass-card text-muted-foreground"
+            }`}
+          >
+            {meal.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -114,9 +149,6 @@ export default function CaloriePage() {
             className="glass-input px-4 py-2 pl-8 text-sm w-full"
           />
         </div>
-        <button className="glass-button-outline px-3 py-2 text-xs flex items-center gap-1">
-          <Camera size={14} /> AI识图
-        </button>
       </div>
 
       {search && (
@@ -140,15 +172,23 @@ export default function CaloriePage() {
       )}
 
       <div className="flex flex-col gap-2">
-        {records.map((record, i) => (
-          <div key={i} className="glass-card p-3 flex items-center justify-between">
+        {records.map((record) => (
+          <div key={record.id} className="glass-card p-3 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium">{record.name}</p>
-              <p className="text-[10px] text-muted-foreground">{record.meal}</p>
+              <p className="text-sm font-medium">{record.foodName}</p>
+              <p className="text-[10px] text-muted-foreground">{mealLabel(record.mealType)}</p>
             </div>
-            <span className="text-sm font-bold text-primary">{record.calories}kcal</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-primary">{record.calories}kcal</span>
+              <button onClick={() => deleteRecord(record.id)} className="text-muted-foreground hover:text-red-500">
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
         ))}
+        {records.length === 0 && !loading && (
+          <p className="text-center text-sm text-muted-foreground py-8">搜索食物添加到今日记录</p>
+        )}
       </div>
     </main>
   );

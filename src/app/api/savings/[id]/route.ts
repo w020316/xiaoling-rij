@@ -8,18 +8,17 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const photo = await prisma.photo.update({
+    const goal = await prisma.savingsGoal.update({
       where: { id },
       data: {
-        ...(body.isFavorite !== undefined && { isFavorite: body.isFavorite }),
-        ...(body.description !== undefined && { description: body.description }),
-        ...(body.location !== undefined && { location: body.location }),
-        ...(body.category !== undefined && { category: body.category }),
+        ...(body.title !== undefined && { title: body.title }),
+        ...(body.target !== undefined && { target: body.target }),
+        ...(body.current !== undefined && { current: body.current }),
       },
     });
-    return NextResponse.json(photo);
+    return NextResponse.json(goal);
   } catch (error) {
-    console.error("Update photo error:", error);
+    console.error("Update savings error:", error);
     return NextResponse.json({ error: "更新失败" }, { status: 500 });
   }
 }
@@ -30,10 +29,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await prisma.photo.delete({ where: { id } });
+    await prisma.savingsGoal.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete photo error:", error);
+    console.error("Delete savings error:", error);
     return NextResponse.json({ error: "删除失败" }, { status: 500 });
   }
 }
