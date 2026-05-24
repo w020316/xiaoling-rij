@@ -142,7 +142,7 @@ export default function AiPage() {
 
   return (
     <main className="min-h-screen flex flex-col p-5 lg:p-8 pb-28 lg:pb-8">
-      <header className="flex items-center gap-3 mb-2 fade-in">
+      <header className="flex items-center gap-3 mb-2 fade-in max-w-3xl mx-auto w-full">
         <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xl float-animation">
           🤖
         </div>
@@ -168,14 +168,14 @@ export default function AiPage() {
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-5 flex flex-col gap-3"
+        className="flex-1 overflow-y-auto px-5 flex flex-col gap-3 max-w-3xl mx-auto w-full"
       >
         {messages.map((msg, i) => (
           <div
             key={i}
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} fade-in`}
           >
-            <div className="max-w-[80%]">
+            <div className="max-w-[85%] lg:max-w-[70%]">
               <div
                 className={`p-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === "user"
@@ -232,13 +232,13 @@ export default function AiPage() {
         )}
       </div>
 
-      <div className="px-5 py-3">
-        <div className="grid grid-cols-4 gap-2 mb-3">
+      <div className="px-5 py-3 max-w-3xl mx-auto w-full">
+        <div className="grid grid-cols-4 gap-2 mb-3 lg:flex lg:flex-row lg:justify-center lg:gap-3">
           {QUICK_ACTIONS.map((action) => (
             <button
               key={action.label}
               onClick={() => handleQuickAction(action)}
-              className="glass-card p-2.5 flex flex-col items-center gap-1 text-xs scale-in hover:bg-primary/5 transition-colors"
+              className="glass-card p-2.5 flex flex-col items-center gap-1 text-xs scale-in hover:bg-primary/5 transition-colors lg:flex-row lg:gap-2 lg:px-4 lg:py-2"
             >
               <span className="text-lg">{action.icon}</span>
               <span className="font-medium text-muted-foreground text-[11px]">
@@ -249,7 +249,7 @@ export default function AiPage() {
         </div>
       </div>
 
-      <div className="p-4 glass-nav max-w-2xl mx-auto">
+      <div className="p-4 glass-nav max-w-3xl mx-auto w-full">
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}

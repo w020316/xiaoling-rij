@@ -185,8 +185,8 @@ export default function AlbumPage() {
       </header>
 
       {showSearch && (
-        <div className="mb-4 slide-up">
-          <div className="flex gap-2">
+        <div className="mb-4 slide-up lg:mb-6">
+          <div className="flex gap-2 lg:gap-3">
             <input
               type="text"
               value={searchQuery}
@@ -195,7 +195,7 @@ export default function AlbumPage() {
                 setAiResult("");
               }}
               placeholder="🔍 搜索照片（AI智能搜索）..."
-              className="glass-input px-4 py-2.5 text-sm flex-1"
+              className="glass-input px-4 py-2.5 lg:px-5 lg:py-3 text-sm lg:text-base flex-1"
             />
           </div>
           {searchQuery && searchFiltered.length === 0 && (
@@ -203,13 +203,13 @@ export default function AlbumPage() {
               <button
                 onClick={handleAiSearch}
                 disabled={aiSearching}
-                className="glass-button px-4 py-2 text-xs flex items-center gap-1.5"
+                className="glass-button px-4 py-2 lg:px-5 lg:py-2.5 text-xs lg:text-sm flex items-center gap-1.5"
               >
                 <Sparkles size={14} />
                 {aiSearching ? "AI搜索中..." : "AI搜索"}
               </button>
               {aiResult && (
-                <div className="glass-card p-3 mt-2 text-xs text-muted-foreground flex items-start gap-2">
+                <div className="glass-card p-3 lg:p-4 mt-2 text-xs lg:text-sm text-muted-foreground flex items-start gap-2">
                   <MessageSquare size={14} className="text-primary shrink-0 mt-0.5" />
                   {aiResult}
                 </div>
@@ -326,7 +326,7 @@ export default function AlbumPage() {
             {gridPhotos.map((photo, idx) => (
               <div
                 key={photo.id}
-                className={`glass-card overflow-hidden scale-in stagger-${Math.min(idx % 5 + 1, 5)}`}
+                className={`glass-card overflow-hidden scale-in stagger-${Math.min(idx % 5 + 1, 5)} cursor-pointer lg:hover:shadow-lg lg:hover:scale-[1.03] lg:transition-all lg:duration-300`}
                 onClick={() => setSelectedPhoto(photo)}
               >
                 <div className="relative aspect-square bg-primary/5">

@@ -224,18 +224,18 @@ export default function HealthPage() {
   ];
 
   return (
-    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-3xl lg:mx-auto">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-4xl lg:mx-auto">
       <header className="flex items-center gap-3 mb-5 pt-2 fade-in">
         <Thermometer size={22} className="text-primary" />
-        <h1 className="text-xl font-bold">健康管理</h1>
+        <h1 className="text-xl font-bold lg:text-2xl">健康管理</h1>
       </header>
 
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1 fade-in stagger-1">
+      <div className="flex gap-2 lg:gap-3 mb-5 overflow-x-auto pb-1 fade-in stagger-1">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all lg:px-5 lg:py-2.5 lg:text-sm lg:rounded-lg ${
               activeTab === tab.key
                 ? "bg-primary text-primary-foreground"
                 : "glass-card text-muted-foreground"
@@ -248,9 +248,9 @@ export default function HealthPage() {
 
       {activeTab === "water" && (
         <div className="flex flex-col gap-4">
-          <div className="glass-card p-6 text-center fade-in stagger-2">
-            <p className="text-5xl mb-3">💧</p>
-            <h2 className="text-3xl font-bold text-primary">{waterCups}/8</h2>
+          <div className="glass-card p-6 lg:p-8 text-center fade-in stagger-2">
+            <p className="text-5xl mb-3 lg:text-6xl">💧</p>
+            <h2 className="text-3xl font-bold text-primary lg:text-4xl">{waterCups}/8</h2>
             <p className="text-sm text-muted-foreground mt-1">杯水</p>
 
             <div className="mt-4 w-full bg-muted rounded-full h-3 overflow-hidden">
@@ -306,18 +306,18 @@ export default function HealthPage() {
 
       {activeTab === "exercise" && (
         <div className="flex flex-col gap-4">
-          <div className="glass-card p-5 text-center fade-in stagger-2">
-            <p className="text-5xl mb-3">🏃</p>
-            <h2 className="text-3xl font-bold text-primary">{todayTotalMinutes}</h2>
+          <div className="glass-card p-5 lg:p-8 text-center fade-in stagger-2">
+            <p className="text-5xl mb-3 lg:text-6xl">🏃</p>
+            <h2 className="text-3xl font-bold text-primary lg:text-4xl">{todayTotalMinutes}</h2>
             <p className="text-sm text-muted-foreground mt-1">分钟运动</p>
-            <div className="flex justify-center gap-4 mt-3">
-              <div className="glass-card px-3 py-2 text-center">
-                <p className="text-sm font-bold text-orange-500">{todayTotalCalories}</p>
-                <p className="text-[10px] text-muted-foreground">千卡</p>
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="glass-card px-3 py-2 text-center lg:px-5 lg:py-3">
+                <p className="text-sm font-bold text-orange-500 lg:text-lg">{todayTotalCalories}</p>
+                <p className="text-[10px] text-muted-foreground lg:text-xs">千卡</p>
               </div>
-              <div className="glass-card px-3 py-2 text-center">
-                <p className="text-sm font-bold text-blue-500">{todayExercises.length}</p>
-                <p className="text-[10px] text-muted-foreground">次运动</p>
+              <div className="glass-card px-3 py-2 text-center lg:px-5 lg:py-3">
+                <p className="text-sm font-bold text-blue-500 lg:text-lg">{todayExercises.length}</p>
+                <p className="text-[10px] text-muted-foreground lg:text-xs">次运动</p>
               </div>
             </div>
           </div>
@@ -379,8 +379,8 @@ export default function HealthPage() {
           )}
 
           {todayExercises.length > 0 && (
-            <div className="glass-card p-4 fade-in stagger-3">
-              <h3 className="text-sm font-bold mb-3">今日运动</h3>
+            <div className="glass-card p-4 lg:p-5 fade-in stagger-3">
+              <h3 className="text-sm font-bold mb-3 lg:text-base">今日运动</h3>
               <div className="flex flex-col gap-2">
                 {todayExercises.map((r) => (
                   <div key={r.id} className="flex items-center justify-between text-sm">
@@ -396,9 +396,9 @@ export default function HealthPage() {
             </div>
           )}
 
-          <div className="glass-card p-4 fade-in stagger-4">
-            <h3 className="text-sm font-bold mb-3">本周运动</h3>
-            <div className="flex items-end gap-1 h-24">
+          <div className="glass-card p-4 lg:p-5 fade-in stagger-4">
+            <h3 className="text-sm font-bold mb-3 lg:text-base">本周运动</h3>
+            <div className="flex items-end gap-1 h-24 lg:h-32">
               {weekExerciseData.map((d, i) => {
                 const dayLabel = new Date(d.date).toLocaleDateString("zh-CN", { weekday: "narrow" });
                 const height = d.minutes > 0 ? Math.max(8, (d.minutes / maxWeekMinutes) * 100) : 4;
@@ -425,8 +425,8 @@ export default function HealthPage() {
 
       {activeTab === "sleep" && (
         <div className="flex flex-col gap-4">
-          <div className="glass-card p-5 text-center fade-in stagger-2">
-            <p className="text-5xl mb-3">😴</p>
+          <div className="glass-card p-5 lg:p-8 text-center fade-in stagger-2">
+            <p className="text-5xl mb-3 lg:text-6xl">😴</p>
             {todaySleep ? (
               <>
                 <h2 className="text-3xl font-bold text-primary">
@@ -505,9 +505,9 @@ export default function HealthPage() {
           )}
 
           {recentSleep.length > 0 && (
-            <div className="glass-card p-4 fade-in stagger-4">
-              <h3 className="text-sm font-bold mb-3">睡眠趋势</h3>
-              <div className="flex items-end gap-1 h-24">
+            <div className="glass-card p-4 lg:p-5 fade-in stagger-4">
+            <h3 className="text-sm font-bold mb-3 lg:text-base">睡眠趋势</h3>
+            <div className="flex items-end gap-1 h-24 lg:h-32">
                 {recentSleep.slice(0, 7).reverse().map((r, i) => {
                   const hours = calcSleepDuration(r.bedtime, r.wakeTime);
                   const height = Math.max(8, Math.min(100, (hours / 10) * 100));
@@ -544,8 +544,8 @@ export default function HealthPage() {
           )}
 
           {recentSleep.length > 0 && (
-            <div className="glass-card p-4 fade-in stagger-5">
-              <h3 className="text-sm font-bold mb-3">历史记录</h3>
+            <div className="glass-card p-4 lg:p-5 fade-in stagger-5">
+              <h3 className="text-sm font-bold mb-3 lg:text-base">历史记录</h3>
               <div className="flex flex-col gap-2">
                 {recentSleep.map((r) => (
                   <div key={r.id} className="flex items-center justify-between text-sm">
@@ -568,26 +568,26 @@ export default function HealthPage() {
 
       {activeTab === "study" && (
         <div className="flex flex-col gap-4">
-          <div className="glass-card p-5 text-center fade-in stagger-2">
-            <p className="text-5xl mb-3">📚</p>
-            <h2 className="text-3xl font-bold text-primary">
+          <div className="glass-card p-5 lg:p-8 text-center fade-in stagger-2">
+            <p className="text-5xl mb-3 lg:text-6xl">📚</p>
+            <h2 className="text-3xl font-bold text-primary lg:text-4xl">
               {studyRecords.filter((r) => r.date === getTodayKey()).reduce((s, r) => s + r.duration, 0)}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">分钟学习</p>
-            <div className="flex justify-center gap-4 mt-3">
-              <div className="glass-card px-3 py-2 text-center">
-                <p className="text-sm font-bold text-blue-500">
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="glass-card px-3 py-2 text-center lg:px-5 lg:py-3">
+                <p className="text-sm font-bold text-blue-500 lg:text-lg">
                   {studyRecords.filter((r) => r.date === getTodayKey()).length}
                 </p>
-                <p className="text-[10px] text-muted-foreground">次学习</p>
+                <p className="text-[10px] text-muted-foreground lg:text-xs">次学习</p>
               </div>
-              <div className="glass-card px-3 py-2 text-center">
-                <p className="text-sm font-bold text-purple-500">
+              <div className="glass-card px-3 py-2 text-center lg:px-5 lg:py-3">
+                <p className="text-sm font-bold text-purple-500 lg:text-lg">
                   {weekDates.reduce((s, d) => {
                     return s + studyRecords.filter((r) => r.date === d).reduce((ss, r) => ss + r.duration, 0);
                   }, 0)}
                 </p>
-                <p className="text-[10px] text-muted-foreground">本周(分钟)</p>
+                <p className="text-[10px] text-muted-foreground lg:text-xs">本周(分钟)</p>
               </div>
             </div>
           </div>
@@ -637,8 +637,8 @@ export default function HealthPage() {
           )}
 
           {studyRecords.filter((r) => r.date === getTodayKey()).length > 0 && (
-            <div className="glass-card p-4 fade-in stagger-3">
-              <h3 className="text-sm font-bold mb-3">今日学习</h3>
+            <div className="glass-card p-4 lg:p-5 fade-in stagger-3">
+              <h3 className="text-sm font-bold mb-3 lg:text-base">今日学习</h3>
               <div className="flex flex-col gap-2">
                 {studyRecords.filter((r) => r.date === getTodayKey()).map((r) => (
                   <div key={r.id} className="flex items-center justify-between text-sm">
@@ -653,9 +653,9 @@ export default function HealthPage() {
             </div>
           )}
 
-          <div className="glass-card p-4 fade-in stagger-4">
-            <h3 className="text-sm font-bold mb-3">本周学习</h3>
-            <div className="flex items-end gap-1 h-24">
+          <div className="glass-card p-4 lg:p-5 fade-in stagger-4">
+            <h3 className="text-sm font-bold mb-3 lg:text-base">本周学习</h3>
+            <div className="flex items-end gap-1 h-24 lg:h-32">
               {weekDates.map((date, i) => {
                 const dayLabel = new Date(date).toLocaleDateString("zh-CN", { weekday: "narrow" });
                 const dayMin = studyRecords.filter((r) => r.date === date).reduce((s, r) => s + r.duration, 0);

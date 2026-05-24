@@ -258,9 +258,9 @@ export default function TodoPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setShowAi(!showAi)}
-            className="glass-button-outline px-3 py-1.5 text-xs flex items-center gap-1"
+            className="glass-button-outline px-3 py-1.5 lg:px-4 lg:py-2 text-xs lg:text-sm flex items-center gap-1 lg:gap-1.5 lg:hover:shadow-md lg:transition-all lg:duration-200"
           >
-            <Sparkles size={14} /> AI助手
+            <Sparkles size={14} className="lg:w-4 lg:h-4" /> AI助手
           </button>
           <Link
             href="/todo/new"
@@ -272,25 +272,25 @@ export default function TodoPage() {
       </header>
 
       {showAi && (
-        <div className="glass-card p-4 mb-4 fade-in">
-          <h3 className="text-sm font-bold mb-2 flex items-center gap-2">
-            <Sparkles size={16} className="text-primary" /> AI 任务助手
+        <div className="glass-card p-4 lg:p-5 mb-4 fade-in">
+          <h3 className="text-sm lg:text-base font-bold mb-2 flex items-center gap-2">
+            <Sparkles size={16} className="text-primary lg:w-[18px] lg:h-[18px]" /> AI 任务助手
           </h3>
-          <p className="text-xs text-muted-foreground mb-3">
+          <p className="text-xs lg:text-sm text-muted-foreground mb-3">
             告诉我你的目标，AI帮你生成学习计划
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 lg:gap-3">
             <input
               type="text"
               value={aiGoal}
               onChange={(e) => setAiGoal(e.target.value)}
               placeholder="例如：下周要考四级..."
-              className="flex-1 glass-input px-3 py-2 text-sm"
+              className="flex-1 glass-input px-3 py-2 lg:px-4 lg:py-2.5 text-sm"
             />
             <button
               onClick={handleAiGenerate}
               disabled={aiLoading}
-              className="glass-button px-4 py-2 text-xs disabled:opacity-50"
+              className="glass-button px-4 py-2 lg:px-5 lg:py-2.5 text-xs lg:text-sm disabled:opacity-50 lg:hover:shadow-md lg:transition-all"
             >
               {aiLoading ? "生成中..." : "生成"}
             </button>
@@ -371,7 +371,7 @@ export default function TodoPage() {
                 </button>
               </div>
               <div
-                className={`glass-card p-4 transition-all duration-300 ${
+                className={`glass-card p-4 lg:p-5 transition-all duration-300 lg:hover:shadow-md lg:cursor-pointer ${
                   isFading ? "opacity-0 -translate-y-2 scale-95" : "fade-in"
                 } ${isDragging ? "opacity-50 border-dashed border-2 border-primary" : ""} ${
                   isDragOver ? "border-2 border-primary/50" : ""
@@ -453,7 +453,7 @@ export default function TodoPage() {
               return (
                 <div
                   key={todo.id}
-                  className={`glass-card p-4 opacity-60 fade-in ${staggerClass}`}
+                  className={`glass-card p-4 lg:p-5 opacity-60 fade-in ${staggerClass} lg:hover:opacity-80 lg:transition-all`}
                 >
                   <div className="flex items-center gap-3">
                     <button

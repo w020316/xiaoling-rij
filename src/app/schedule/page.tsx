@@ -76,13 +76,13 @@ export default function SchedulePage() {
   }
 
   return (
-    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-4xl lg:mx-auto">
       <header className="flex items-center gap-3 mb-5 pt-2">
         <BookOpen size={22} className="text-primary" />
-        <h1 className="text-xl font-bold">课程表</h1>
+        <h1 className="text-xl font-bold lg:text-2xl">课程表</h1>
       </header>
 
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+      <div className="flex gap-2 mb-5 overflow-x-auto pb-1 lg:hidden">
         {DAYS.map((day) => (
           <button
             key={day}
@@ -98,7 +98,50 @@ export default function SchedulePage() {
         ))}
       </div>
 
-      <div className="flex flex-col gap-3 mb-4">
+      <div className="hidden lg:grid lg:grid-cols-7 lg:gap-3 mb-4">
+        {DAYS.map((day) => {
+          const dayCourses = courses
+            .filter((c) => c.dayOfWeek === DAY_MAP[day])
+            .sort((a, b) => a.timeStart.localeCompare(b.timeStart));
+          const isToday = day === today;
+          return (
+            <div key={day} className="flex flex-col gap-2">
+              <div className={`text-center py-2 rounded-lg text-sm font-medium ${isToday ? "bg-primary text-primary-foreground" : "glass-card text-muted-foreground"}`}>
+                {day}
+              </div>
+              {dayCourses.map((course, index) => (
+                <div key={course.id} className="glass-card overflow-hidden">
+                  <div className={`h-1 ${COURSE_COLORS[index % COURSE_COLORS.length]}`} />
+                  <div className="p-2 lg:p-3">
+                    <p className="font-bold text-xs truncate">{course.title}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                      <Clock size={10} /> {course.timeStart}-{course.timeEnd}
+                    </p>
+                    {course.classroom && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                        <MapPin size={10} /> {course.classroom}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => deleteCourse(course.id)}
+                      className="text-muted-foreground/40 hover:text-red-500 text-[10px] mt-1 transition-colors"
+                    >
+                      删除
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {dayCourses.length === 0 && (
+                <div className="glass-card p-2 text-center text-[10px] text-muted-foreground">
+                  无课程
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex flex-col gap-3 mb-4 lg:hidden">
         {filtered.map((course, index) => (
           <div
             key={course.id}

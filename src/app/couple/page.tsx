@@ -118,13 +118,13 @@ export default function CouplePage() {
   const savingsGoals = couple?.savingsGoals || [];
 
   return (
-    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-3xl lg:mx-auto">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-4xl lg:mx-auto">
       <header className="flex items-center gap-3 mb-5 pt-2">
         <Heart size={22} className="text-primary" />
-        <h1 className="text-xl font-bold">情侣空间</h1>
+        <h1 className="text-xl font-bold lg:text-2xl">情侣空间</h1>
       </header>
 
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+      <div className="flex gap-2 lg:gap-3 mb-5 overflow-x-auto pb-1">
         {[
           { key: "overview", label: "💕 概览" },
           { key: "anniversary", label: "🎂 纪念日" },
@@ -134,7 +134,7 @@ export default function CouplePage() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key as any)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all lg:px-5 lg:py-2.5 lg:text-sm lg:rounded-lg ${
               activeTab === tab.key ? "bg-primary text-primary-foreground" : "glass-card text-muted-foreground"
             }`}
           >
@@ -145,12 +145,12 @@ export default function CouplePage() {
 
       {activeTab === "overview" && (
         <div className="flex flex-col gap-4">
-          <div className="glass-card p-6 text-center relative overflow-hidden">
-            <div className="absolute top-3 left-3 text-3xl emoji-bounce">💖</div>
-            <div className="absolute top-3 right-3 text-3xl emoji-bounce" style={{ animationDelay: "0.5s" }}>💖</div>
-            <p className="text-sm text-muted-foreground mb-2">在一起</p>
-            <h2 className="text-5xl font-bold text-primary mb-2">{coupleDays}</h2>
-            <p className="text-sm text-muted-foreground">天</p>
+          <div className="glass-card p-6 lg:p-10 text-center relative overflow-hidden">
+            <div className="absolute top-3 left-3 text-3xl lg:text-4xl emoji-bounce">💖</div>
+            <div className="absolute top-3 right-3 text-3xl lg:text-4xl emoji-bounce" style={{ animationDelay: "0.5s" }}>💖</div>
+            <p className="text-sm text-muted-foreground mb-2 lg:text-base">在一起</p>
+            <h2 className="text-5xl font-bold text-primary mb-2 lg:text-7xl">{coupleDays}</h2>
+            <p className="text-sm text-muted-foreground lg:text-base">天</p>
             {couple && (
               <p className="text-xs text-muted-foreground mt-3">
                 {format(new Date(couple.startDate), "yyyy年MM月dd日")} - {format(new Date(), "yyyy年MM月dd日")}
@@ -158,9 +158,9 @@ export default function CouplePage() {
             )}
           </div>
 
-          <div className="glass-card p-4">
-            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-              <Link2 size={16} className="text-primary" /> 邀请码
+          <div className="glass-card p-4 lg:p-5">
+            <h3 className="text-sm font-bold mb-3 lg:text-base flex items-center gap-2">
+              <Link2 size={16} className="text-primary lg:size-5" /> 邀请码
             </h3>
             <div className="flex items-center gap-3">
               <div className="flex-1 glass-input px-4 py-2.5 text-sm font-mono text-center text-primary">
@@ -176,18 +176,23 @@ export default function CouplePage() {
             <p className="text-[10px] text-muted-foreground mt-2">分享邀请码给TA，绑定情侣关系</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="glass-card p-4 text-center">
-              <p className="text-2xl mb-1">🎂</p>
-              <p className="text-xs text-muted-foreground">纪念日</p>
-              <p className="text-sm font-bold text-primary mt-1">{anniversaries.length} 个</p>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="glass-card p-4 text-center lg:p-5">
+              <p className="text-2xl mb-1 lg:text-3xl">🎂</p>
+              <p className="text-xs text-muted-foreground lg:text-sm">纪念日</p>
+              <p className="text-sm font-bold text-primary mt-1 lg:text-base">{anniversaries.length} 个</p>
             </div>
-            <div className="glass-card p-4 text-center">
-              <p className="text-2xl mb-1">⭐</p>
-              <p className="text-xs text-muted-foreground">愿望完成</p>
-              <p className="text-sm font-bold text-primary mt-1">
+            <div className="glass-card p-4 text-center lg:p-5">
+              <p className="text-2xl mb-1 lg:text-3xl">⭐</p>
+              <p className="text-xs text-muted-foreground lg:text-sm">愿望完成</p>
+              <p className="text-sm font-bold text-primary mt-1 lg:text-base">
                 {wishLists.filter((w) => w.isCompleted).length}/{wishLists.length}
               </p>
+            </div>
+            <div className="glass-card p-4 text-center lg:p-5">
+              <p className="text-2xl mb-1 lg:text-3xl">🐷</p>
+              <p className="text-xs text-muted-foreground lg:text-sm">存钱目标</p>
+              <p className="text-sm font-bold text-primary mt-1 lg:text-base">{savingsGoals.length} 个</p>
             </div>
           </div>
         </div>
@@ -217,7 +222,7 @@ export default function CouplePage() {
               <div key={a.id} className="glass-card p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-sm">{a.title}</h3>
+                    <h3 className="font-medium text-sm lg:text-base">{a.title}</h3>
                     <p className="text-xs text-muted-foreground mt-1">{format(new Date(a.date), "yyyy年MM月dd日")}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -321,7 +326,7 @@ export default function CouplePage() {
             return (
               <div key={s.id} className="glass-card p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-sm">🐷 {s.title}</h3>
+                  <h3 className="font-medium text-sm lg:text-base">🐷 {s.title}</h3>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-primary font-bold">{percent}%</span>
                     <button

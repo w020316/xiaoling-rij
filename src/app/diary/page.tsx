@@ -42,8 +42,8 @@ export default function DiaryPage() {
   return (
     <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
       <header className="flex items-center justify-between mb-5 pt-2">
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <BookHeart size={22} className="text-primary" /> 日记本
+        <h1 className="text-xl lg:text-2xl font-bold flex items-center gap-2">
+          <BookHeart size={22} className="text-primary lg:w-6 lg:h-6" /> 日记本
         </h1>
         <Link
           href="/diary/new"
@@ -75,7 +75,7 @@ export default function DiaryPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {filtered.map((diary) => (
-          <Link href={`/diary/${diary.id}`} key={diary.id} className="glass-card p-4 relative group">
+          <Link href={`/diary/${diary.id}`} key={diary.id} className="glass-card p-4 lg:p-5 relative group lg:hover:shadow-lg lg:hover:-translate-y-1 lg:transition-all lg:duration-300">
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-bold text-base">{diary.title || "无标题日记"}</h3>
               <div className="flex items-center gap-1.5">
@@ -119,7 +119,7 @@ export default function DiaryPage() {
 
         <Link
           href="/diary/ai"
-          className="glass-card p-4 border-dashed border-2 border-primary/30 flex items-center gap-3"
+          className="glass-card p-4 lg:p-5 border-dashed border-2 border-primary/30 flex items-center gap-3 lg:hover:shadow-lg lg:hover:-translate-y-1 lg:transition-all lg:duration-300"
         >
           <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
             <Sparkles size={22} />
