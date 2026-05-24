@@ -100,7 +100,7 @@ export default function AdminPage() {
               <Settings size={16} className="text-primary" /> 系统信息
             </h3>
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <div className="flex justify-between"><span>版本</span><span>v2.1.0</span></div>
+              <div className="flex justify-between"><span>版本</span><span>v2.2.0</span></div>
               <div className="flex justify-between"><span>数据库</span><span>PostgreSQL</span></div>
               <div className="flex justify-between"><span>AI引擎</span><span>DeepSeek</span></div>
               <div className="flex justify-between"><span>框架</span><span>Next.js 16</span></div>

@@ -198,7 +198,7 @@ export default function SettingsPage() {
           <div className="flex flex-col gap-2 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">版本</span>
-              <span>v2.1.0</span>
+              <span>v2.2.0</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">GitHub</span>

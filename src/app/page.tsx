@@ -405,7 +405,7 @@ export default function Home() {
       </div>
 
       <footer className="text-center text-[10px] text-muted-foreground/50 pt-2 pb-4">
-        v2.1.0
+        v2.2.0
       </footer>
     </main>
   );
