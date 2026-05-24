@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Apple, Plus, Camera, Search, Trash2 } from "lucide-react";
+import { Apple, Search, Trash2 } from "lucide-react";
 
 const foodDatabase: Record<string, { calories: number; protein: number; fat: number; carbs: number }> = {
   "鸡胸肉": { calories: 165, protein: 31, fat: 3.6, carbs: 0 },
@@ -95,7 +95,7 @@ export default function CaloriePage() {
   const mealLabel = (key: string) => meals.find((m) => m.key === key)?.label || key;
 
   return (
-    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-2xl lg:mx-auto">
       <header className="flex items-center gap-3 mb-5 pt-2">
         <Apple size={22} className="text-primary" />
         <h1 className="text-xl font-bold">热量管理</h1>

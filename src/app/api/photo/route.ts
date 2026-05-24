@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json(photos);
   } catch (error) {
     console.error("Get photos error:", error);
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json({ error: "获取照片失败" }, { status: 500 });
   }
 }
 

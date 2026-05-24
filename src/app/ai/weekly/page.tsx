@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Sparkles, TrendingUp, TrendingDown, BarChart3, BookOpen, Activity, Smile, ClipboardList } from "lucide-react";
+import { ArrowLeft, Sparkles, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
 import Link from "next/link";
 
 interface Todo {

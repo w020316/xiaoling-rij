@@ -14,6 +14,7 @@ const SYSTEM_PROMPT = `你是"恋爱日常"App的AI小助手，一个温暖、�
 export async function POST(request: NextRequest) {
   try {
     const { messages } = await request.json();
+    if (!Array.isArray(messages)) return NextResponse.json({ error: "messages 必须为数组" }, { status: 400 });
 
     const apiMessages = [
       { role: "system", content: SYSTEM_PROMPT },

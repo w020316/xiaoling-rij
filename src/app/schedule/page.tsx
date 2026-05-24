@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  BookOpen, Plus, Trash2, MapPin, Clock, ChevronDown, ChevronUp, X
+  BookOpen, Plus, Trash2, MapPin, Clock, ChevronUp
 } from "lucide-react";
 
 const DAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];

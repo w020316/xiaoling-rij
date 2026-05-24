@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BookHeart, Plus, Sparkles, MapPin, CloudSun, Tag, Trash2 } from "lucide-react";
+import { BookHeart, Plus, Sparkles, CloudSun, Tag, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 interface Diary {
@@ -73,7 +73,7 @@ export default function DiaryPage() {
         ))}
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {filtered.map((diary) => (
           <Link href={`/diary/${diary.id}`} key={diary.id} className="glass-card p-4 relative group">
             <div className="flex items-start justify-between mb-2">

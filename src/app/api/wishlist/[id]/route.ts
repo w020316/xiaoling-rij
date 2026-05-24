@@ -12,7 +12,10 @@ export async function PATCH(
       where: { id },
       data: {
         ...(body.title !== undefined && { title: body.title }),
-        ...(body.completed !== undefined && { completed: body.completed }),
+        ...(body.isCompleted !== undefined && {
+          isCompleted: body.isCompleted,
+          completedAt: body.isCompleted ? new Date() : null,
+        }),
       },
     });
     return NextResponse.json(item);

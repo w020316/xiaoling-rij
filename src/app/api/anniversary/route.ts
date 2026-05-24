@@ -19,6 +19,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    if (!body.title || !body.date) return NextResponse.json({ error: "缺少必填字段" }, { status: 400 });
     let couple = await prisma.couple.findFirst();
     if (!couple) {
       couple = await prisma.couple.create({

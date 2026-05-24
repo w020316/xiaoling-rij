@@ -35,8 +35,8 @@ export default function AiDiaryPage() {
           title: input.slice(0, 20),
           content: result.diary,
           diaryType: "ai",
-          tags: ["AI生成"],
-          aiContent: result,
+          tags: "AI生成",
+          aiContent: JSON.stringify(result),
         }),
       });
       window.location.href = "/diary";

@@ -16,6 +16,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    if (!body.timeStart || !body.timeEnd || !body.title) return NextResponse.json({ error: "缺少必填字段" }, { status: 400 });
     const schedule = await prisma.schedule.create({
       data: {
         timeStart: body.timeStart,

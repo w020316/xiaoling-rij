@@ -17,6 +17,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    if (!body.startDate) return NextResponse.json({ error: "缺少startDate字段" }, { status: 400 });
     const record = await prisma.periodRecord.create({
       data: {
         startDate: new Date(body.startDate),

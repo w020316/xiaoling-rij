@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Send, RotateCcw, Copy, Check, Moon, BarChart3, Heart, MessageCircle } from "lucide-react";
+import { Send, RotateCcw, Copy, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Message {
@@ -249,7 +249,7 @@ export default function AiPage() {
         </div>
       </div>
 
-      <div className="p-4 glass-nav">
+      <div className="p-4 glass-nav max-w-2xl mx-auto">
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}

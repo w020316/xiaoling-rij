@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json(user);
   } catch (error) {
     console.error("Get user error:", error);
-    return NextResponse.json({ nickname: "小林", checkInDays: 0 }, { status: 500 });
+    return NextResponse.json({ error: "获取用户失败" }, { status: 500 });
   }
 }
 
@@ -26,9 +26,9 @@ export async function PATCH(request: NextRequest) {
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
-        nickname: body.nickname,
-        avatar: body.avatar,
-        theme: body.theme,
+        ...(body.nickname !== undefined && { nickname: body.nickname }),
+        ...(body.avatar !== undefined && { avatar: body.avatar }),
+        ...(body.theme !== undefined && { theme: body.theme }),
       },
     });
     return NextResponse.json(updated);

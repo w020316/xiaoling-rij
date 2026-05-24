@@ -3,9 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import {
-  Palette, Heart, Bell, Shield, HelpCircle,
-  ChevronRight, Settings, Calendar, BarChart3,
-  Moon, User
+  Palette, Heart, ChevronRight, User
 } from "lucide-react";
 import Link from "next/link";
 
@@ -109,7 +107,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-2xl lg:mx-auto">
       <header className="flex flex-col items-center pt-4 mb-6 fade-in">
         <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-4xl mb-3 float-animation">
           {avatar}

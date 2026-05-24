@@ -9,13 +9,14 @@ export async function GET() {
     return NextResponse.json(diaries);
   } catch (error) {
     console.error("Get diaries error:", error);
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json({ error: "获取日记失败" }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    if (!body.content) return NextResponse.json({ error: "缺少content字段" }, { status: 400 });
     const diary = await prisma.diary.create({
       data: {
         title: body.title || "无标题日记",

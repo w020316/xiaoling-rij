@@ -19,6 +19,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    if (!body.foodName) return NextResponse.json({ error: "缺少foodName字段" }, { status: 400 });
     const record = await prisma.calorieRecord.create({
       data: {
         foodName: body.foodName,

@@ -89,7 +89,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-2xl lg:mx-auto">
       <header className="flex items-center gap-3 mb-6 pt-2">
         <Link href="/profile" className="p-1 -ml-1 rounded-xl hover:bg-muted/50 transition-colors">
           <ArrowLeft size={22} className="text-primary" />

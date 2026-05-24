@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    if (!body.mood) return NextResponse.json({ error: "缺少mood字段" }, { status: 400 });
     const record = await prisma.emotionRecord.create({
       data: {
         mood: body.mood,
@@ -33,6 +34,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(records);
   } catch (error) {
     console.error("Get emotion error:", error);
-    return NextResponse.json(null);
+    return NextResponse.json({ error: "获取心情记录失败" }, { status: 500 });
   }
 }

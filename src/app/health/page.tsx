@@ -224,7 +224,7 @@ export default function HealthPage() {
   ];
 
   return (
-    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-3xl lg:mx-auto">
       <header className="flex items-center gap-3 mb-5 pt-2 fade-in">
         <Thermometer size={22} className="text-primary" />
         <h1 className="text-xl font-bold">健康管理</h1>

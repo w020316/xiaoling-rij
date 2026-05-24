@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Camera, MapPin, Calendar, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Camera } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 

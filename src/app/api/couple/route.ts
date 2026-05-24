@@ -54,9 +54,9 @@ export async function PATCH(request: NextRequest) {
     const updated = await prisma.couple.update({
       where: { id: couple.id },
       data: {
-        startDate: body.startDate ? new Date(body.startDate) : undefined,
-        nickname1: body.nickname1,
-        nickname2: body.nickname2,
+        ...(body.nickname1 !== undefined && { nickname1: body.nickname1 }),
+        ...(body.nickname2 !== undefined && { nickname2: body.nickname2 }),
+        ...(body.startDate !== undefined && { startDate: new Date(body.startDate) }),
       },
     });
     return NextResponse.json(updated);

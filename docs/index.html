@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>恋爱日常 - Love Daily AI</title>
+  <meta name="description" content="治愈系 AI 日常管理应用 - 管理学习与生活，记录情绪和成长，保存情侣甜蜜回忆">
+  <meta name="keywords" content="恋爱日常, AI, 日记, 待办, 健康管理, 情侣空间">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💕</text></svg>">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--pink:#ec4899;--purple:#a855f7;--blue:#3b82f6;--bg:#fdf2f8;--card:rgba(255,255,255,0.7);--text:#1f2937;--muted:#6b7280;--border:rgba(0,0,0,0.06)}
+    @media(prefers-color-scheme:dark){:root{--bg:#0f172a;--card:rgba(30,41,59,0.7);--text:#f1f5f9;--muted:#94a3b8;--border:rgba(255,255,255,0.06)}}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    .glass{background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:1rem}
+    .gradient-text{background:linear-gradient(135deg,var(--pink),var(--purple),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border-radius:9999px;font-weight:600;font-size:15px;text-decoration:none;transition:all .3s;cursor:pointer;border:none}
+    .btn-primary{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;box-shadow:0 4px 20px rgba(236,72,153,.3)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(236,72,153,.4)}
+    .btn-outline{background:var(--card);color:var(--text);border:1px solid var(--border);backdrop-filter:blur(10px)}
+    .btn-outline:hover{transform:translateY(-2px);border-color:var(--pink)}
+    .feature-card{padding:24px;transition:all .3s}
+    .feature-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.08)}
+    .float{animation:float 3s ease-in-out infinite}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    .fade-up{opacity:0;transform:translateY(20px);animation:fadeUp .6s ease forwards}
+    @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+    .stagger-1{animation-delay:.1s}.stagger-2{animation-delay:.2s}.stagger-3{animation-delay:.3s}.stagger-4{animation-delay:.4s}
+    .stagger-5{animation-delay:.5s}.stagger-6{animation-delay:.6s}.stagger-7{animation-delay:.7s}.stagger-8{animation-delay:.8s}
+    nav{position:sticky;top:0;z-index:50;padding:16px 24px;backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .container{max-width:1100px;margin:0 auto;padding:0 24px}
+    .grid-2{display:grid;grid-template-columns:1fr;gap:16px}
+    .grid-4{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    @media(min-width:640px){.grid-4{grid-template-columns:repeat(4,1fr)}}
+    @media(min-width:768px){.grid-2{grid-template-columns:1fr 1fr}}
+    .hero{padding:80px 24px 60px;text-align:center}
+    .hero h1{font-size:2.5rem;line-height:1.2;margin-bottom:20px}
+    @media(min-width:768px){.hero h1{font-size:3.5rem}}
+    .section{padding:60px 24px}
+    .section h2{font-size:1.75rem;text-align:center;margin-bottom:8px}
+    .section .sub{text-align:center;color:var(--muted);margin-bottom:40px}
+    .tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    @media(min-width:640px){.tech-grid{grid-template-columns:repeat(6,1fr)}}
+    .theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    @media(min-width:640px){.theme-grid{grid-template-columns:repeat(4,1fr)}}
+    footer{padding:32px 24px;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:13px}
+    .icon-box{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px}
+    .stats{display:flex;justify-content:center;gap:40px;margin-top:32px;flex-wrap:wrap}
+    .stats div{text-align:center}
+    .stats .num{font-size:1.5rem;font-weight:700}
+    .stats .label{font-size:12px;color:var(--muted);margin-top:2px}
+  </style>
+</head>
+<body>
+  <nav class="glass">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:24px" class="float">💕</span>
+        <span style="font-weight:700;font-size:18px" class="gradient-text">恋爱日常</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <a href="https://github.com/w020316/xiaoling-rij" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:4px;font-size:14px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+          GitHub
+        </a>
+        <a href="https://xiaoling-rij.vercel.app" class="btn btn-primary" style="padding:8px 20px;font-size:13px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          立即体验
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="container">
+      <div class="fade-up" style="display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:9999px;background:rgba(236,72,153,.1);color:var(--pink);font-size:14px;margin-bottom:24px">
+        ✨ 治愈系 AI 日常管理应用
+      </div>
+      <h1 class="fade-up stagger-1">
+        <span class="gradient-text">记录每一天的</span><br>
+        <span class="gradient-text">甜蜜与成长</span>
+      </h1>
+      <p class="fade-up stagger-2" style="font-size:17px;color:var(--muted);max-width:560px;margin:0 auto 32px;line-height:1.7">
+        管理学习与生活，记录情绪和成长，保存情侣甜蜜回忆。<br>AI 驱动的智能伴侣体验，让每一天都充满温暖。
+      </p>
+      <div class="fade-up stagger-3" style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
+        <a href="https://xiaoling-rij.vercel.app" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          在线体验
+        </a>
+        <a href="https://github.com/w020316/xiaoling-rij" target="_blank" rel="noopener" class="btn btn-outline">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+          查看源码
+        </a>
+      </div>
+      <div class="stats fade-up stagger-4">
+        <div><div class="num gradient-text">8+</div><div class="label">功能模块</div></div>
+        <div><div class="num gradient-text">4</div><div class="label">治愈主题</div></div>
+        <div><div class="num gradient-text">45+</div><div class="label">API 端点</div></div>
+        <div><div class="num gradient-text">0</div><div class="label">部署成本</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="fade-up">✨ 核心功能</h2>
+      <p class="sub fade-up">8 大功能模块，覆盖日常管理方方面面</p>
+      <div class="grid-4">
+        <div class="glass feature-card fade-up stagger-1">
+          <div class="icon-box" style="background:rgba(59,130,246,.1);color:#3b82f6">✅</div>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">智能待办</h3>
+          <p style="font-size:12px;color:var(--muted);line-height:1.5">AI 驱动的任务管理，自动生成学习计划</p>
+        </div>
+        <div class="glass feature-card fade-up stagger-2">
+          <div class="icon-box" style="background:rgba(236,72,153,.1);color:#ec4899">📔</div>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">心情日记</h3>
+          <p style="font-size:12px;color:var(--muted);line-height:1.5">记录每一天的情绪与成长，AI 智能扩写</p>
+        </div>
+        <div class="glass feature-card fade-up stagger-3">
+          <div class="icon-box" style="background:rgba(168,85,247,.1);color:#a855f7">📸</div>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">时光相册</h3>
+          <p style="font-size:12px;color:var(--muted);line-height:1.5">永久保存甜蜜瞬间，AI 智能搜索照片</p>
+        </div>
+        <div class="glass feature-card fade-up stagger-4">
+          <div class="icon-box" style="background:rgba(34,197,94,.1);color:#22c55e">🤖</div>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">AI 伴侣</h3>
+          <p style="font-size:12px;color:var(--muted);line-height:1.5">DeepSeek 驱动的智能聊天与晚安总结</p>
+        </div>
+        <div class="glass feature-card fade-up stagger-5">
+          <div class="icon-box" style="background:rgba(249,115,22,.1);color:#f97316">💪</div>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">健康管理</h3>
+          <p style="font-size:12px;color:var(--muted);line-height:1.5">喝水/运动/睡眠/学习/经期全方位追踪</p>
+        </div>
+        <div class="glass feature-card fade-up stagger-6">
+          <div class="icon-box" style="background:rgba(239,68,68,.1);color:#ef4444">💑</div>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">情侣空间</h3>
+          <p style="font-size:12px;color:var(--muted);line-height:1.5">纪念日倒计时、愿望清单、共同存钱</p>
+        </div>
+        <div class="glass feature-card fade-up stagger-7">
+          <div class="icon-box" style="background:rgba(6,182,212,.1);color:#06b6d4">📅</div>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">课程表</h3>
+          <p style="font-size:12px;color:var(--muted);line-height:1.5">每周课程管理，教室信息一目了然</p>
+        </div>
+        <div class="glass feature-card fade-up stagger-8">
+          <div class="icon-box" style="background:rgba(234,179,8,.1);color:#eab308">🌤️</div>
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">天气打卡</h3>
+          <p style="font-size:12px;color:var(--muted);line-height:1.5">实时天气查询，每日签到打卡</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="background:linear-gradient(180deg,transparent,rgba(168,85,247,.03),transparent)">
+    <div class="container">
+      <h2 class="fade-up">🎨 四款治愈主题</h2>
+      <p class="sub fade-up">三丽鸥风格 × 毛玻璃设计，随心切换</p>
+      <div class="theme-grid">
+        <div class="glass" style="padding:24px;text-align:center">
+          <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#581c87,#9333ea);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;box-shadow:0 8px 24px rgba(88,28,135,.3)">💜</div>
+          <p style="font-weight:700;font-size:14px">库洛米</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">紫色暗黑系</p>
+        </div>
+        <div class="glass" style="padding:24px;text-align:center">
+          <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#f9a8d4,#ec4899);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;box-shadow:0 8px 24px rgba(236,72,153,.3)">🎀</div>
+          <p style="font-weight:700;font-size:14px">美乐蒂</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">粉色可爱系</p>
+        </div>
+        <div class="glass" style="padding:24px;text-align:center">
+          <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#bfdbfe,#60a5fa);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;box-shadow:0 8px 24px rgba(96,165,250,.3)">☁️</div>
+          <p style="font-weight:700;font-size:14px">玉桂狗</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">蓝色治愈系</p>
+        </div>
+        <div class="glass" style="padding:24px;text-align:center">
+          <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#1f2937,#4b5563);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;box-shadow:0 8px 24px rgba(31,41,55,.3)">🌙</div>
+          <p style="font-weight:700;font-size:14px">暗黑模式</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">深色护眼系</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="fade-up">🛠️ 技术架构</h2>
+      <p class="sub fade-up">现代化全栈技术，零成本部署</p>
+      <div class="tech-grid">
+        <div class="glass" style="padding:16px;text-align:center">
+          <p style="font-weight:700;font-size:13px;color:var(--pink)">Next.js 16</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">React 19</p>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center">
+          <p style="font-weight:700;font-size:13px;color:var(--purple)">Prisma</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">类型安全 ORM</p>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center">
+          <p style="font-weight:700;font-size:13px;color:var(--blue)">PostgreSQL</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">Neon 云数据库</p>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center">
+          <p style="font-weight:700;font-size:13px;color:#22c55e">DeepSeek</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">AI 引擎</p>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center">
+          <p style="font-weight:700;font-size:13px;color:#06b6d4">Tailwind 4</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">毛玻璃设计</p>
+        </div>
+        <div class="glass" style="padding:16px;text-align:center">
+          <p style="font-weight:700;font-size:13px;color:#f97316">Vercel</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">零成本部署</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 class="fade-up">📱 双端适配</h2>
+      <p class="sub fade-up">移动端底部导航 + 桌面端侧边栏</p>
+      <div class="grid-2" style="max-width:700px;margin:0 auto">
+        <div class="glass" style="padding:32px;text-align:center">
+          <div style="font-size:40px;margin-bottom:12px">📱</div>
+          <h3 style="font-weight:700;margin-bottom:12px">移动端</h3>
+          <ul style="list-style:none;font-size:14px;color:var(--muted);text-align:left;max-width:180px;margin:0 auto">
+            <li style="padding:6px 0">✅ 底部导航栏</li>
+            <li style="padding:6px 0">✅ 触摸优化交互</li>
+            <li style="padding:6px 0">✅ 安全区域适配</li>
+            <li style="padding:6px 0">✅ PWA 离线支持</li>
+          </ul>
+        </div>
+        <div class="glass" style="padding:32px;text-align:center">
+          <div style="font-size:40px;margin-bottom:12px">🖥️</div>
+          <h3 style="font-weight:700;margin-bottom:12px">桌面端</h3>
+          <ul style="list-style:none;font-size:14px;color:var(--muted);text-align:left;max-width:180px;margin:0 auto">
+            <li style="padding:6px 0">✅ 侧边栏导航</li>
+            <li style="padding:6px 0">✅ Dashboard 网格</li>
+            <li style="padding:6px 0">✅ 悬停交互反馈</li>
+            <li style="padding:6px 0">✅ 宽屏内容适配</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container" style="max-width:700px">
+      <div class="glass" style="padding:40px;text-align:center">
+        <h2 style="font-size:1.5rem;margin-bottom:8px">🚀 立即开始</h2>
+        <p style="color:var(--muted);margin-bottom:24px;line-height:1.6">免费开源，零成本部署，即刻拥有你的治愈系日常管理应用</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
+          <a href="https://xiaoling-rij.vercel.app" class="btn btn-primary">
+            🌐 在线体验
+          </a>
+          <a href="https://github.com/w020316/xiaoling-rij" target="_blank" rel="noopener" class="btn btn-outline">
+            ↗ GitHub 仓库
+          </a>
+        </div>
+        <div style="margin-top:24px;display:flex;justify-content:center;gap:24px;font-size:13px;color:var(--muted)">
+          <span>🔒 安全可靠</span>
+          <span>⚡ 零成本</span>
+          <span>🎨 开源</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:18px">💕</span>
+        <span style="font-weight:700">恋爱日常</span>
+        <span style="font-size:11px;color:var(--muted)">v2.3.1</span>
+      </div>
+      <div style="display:flex;gap:16px;font-size:13px">
+        <a href="https://github.com/w020316/xiaoling-rij" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:none">GitHub</a>
+        <a href="https://xiaoling-rij.vercel.app" style="color:var(--muted);text-decoration:none">在线体验</a>
+        <a href="https://xiaoling-rij.vercel.app/landing" style="color:var(--muted);text-decoration:none">项目介绍</a>
+      </div>
+      <p style="margin-top:4px">Made with 💕 by Love Daily AI</p>
+    </div>
+  </footer>
+</body>
+</html>

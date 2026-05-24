@@ -45,6 +45,15 @@ function getTodayDayOfWeek(): number {
   return jsDay === 0 ? 7 : jsDay;
 }
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 6) return "夜深了";
+  if (h < 12) return "早上好";
+  if (h < 14) return "中午好";
+  if (h < 18) return "下午好";
+  return "晚上好";
+}
+
 function getWaterKey(): string {
   return `water-cups-${format(new Date(), "yyyy-MM-dd")}`;
 }
@@ -79,7 +88,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       fetch("/api/user/stats").then((r) => r.json()),
       fetch("/api/couple").then((r) => r.json()),
       fetch("/api/emotion").then((r) => r.json()),
@@ -87,21 +96,24 @@ export default function Home() {
       fetch("/api/schedule").then((r) => r.json()),
       fetch("/api/user").then((r) => r.json()),
       fetch("/api/quote").then((r) => r.json()),
-    ]).then(async ([statsData, coupleData, emotionData, weatherData, scheduleData, userData, quoteData]) => {
-      setStats(statsData);
-      setCouple(coupleData);
-      if (emotionData) setTodayMood(emotionData.mood);
-      setWeather(weatherData);
-      const today = getTodayDayOfWeek();
-      const todaySchedules = Array.isArray(scheduleData)
-        ? scheduleData.filter((s: ScheduleItem) => s.dayOfWeek === today)
-        : [];
-      todaySchedules.sort((a: ScheduleItem, b: ScheduleItem) =>
-        a.timeStart.localeCompare(b.timeStart)
-      );
-      setSchedules(todaySchedules);
-      if (userData?.nickname) setNickname(userData.nickname);
-      if (quoteData?.content) setQuote(quoteData.content);
+    ]).then(async (results) => {
+      const [statsRes, coupleRes, emotionRes, weatherRes, scheduleRes, userRes, quoteRes] = results;
+      if (statsRes.status === "fulfilled") setStats(statsRes.value);
+      if (coupleRes.status === "fulfilled") setCouple(coupleRes.value);
+      if (emotionRes.status === "fulfilled" && emotionRes.value) setTodayMood(emotionRes.value.mood);
+      if (weatherRes.status === "fulfilled") setWeather(weatherRes.value);
+      if (scheduleRes.status === "fulfilled") {
+        const today = getTodayDayOfWeek();
+        const todaySchedules = Array.isArray(scheduleRes.value)
+          ? scheduleRes.value.filter((s: ScheduleItem) => s.dayOfWeek === today)
+          : [];
+        todaySchedules.sort((a: ScheduleItem, b: ScheduleItem) =>
+          a.timeStart.localeCompare(b.timeStart)
+        );
+        setSchedules(todaySchedules);
+      }
+      if (userRes.status === "fulfilled" && userRes.value?.nickname) setNickname(userRes.value.nickname);
+      if (quoteRes.status === "fulfilled" && quoteRes.value?.content) setQuote(quoteRes.value.content);
       try {
         const lastYear = new Date();
         lastYear.setFullYear(lastYear.getFullYear() - 1);
@@ -404,7 +416,7 @@ export default function Home() {
               🐱
             </button>
             <div>
-              <h1 className="text-2xl font-bold">早上好，{nickname || "小林"} ✨</h1>
+              <h1 className="text-2xl font-bold">{getGreeting()}，{nickname || "小林"} ✨</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
                 连续打卡 <span className="text-primary font-bold">{stats?.checkInDays || 0}</span> 天 🔥
                 {checkedIn && <span className="ml-2 text-primary">✓ 今日已打卡</span>}
@@ -508,7 +520,7 @@ export default function Home() {
             </button>
             <div className="flex-1 flex gap-1">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} onClick={() => setWaterCups(i + 1)} className={`flex-1 h-8 rounded-md cursor-pointer transition-all duration-200 ${i < waterCups ? "bg-gradient-to-t from-blue-400 to-cyan-300 shadow-sm" : "bg-muted hover:bg-muted/80"}`} />
+                <div key={i} onClick={() => { setWaterCupsState(i + 1); setWaterCups(i + 1); }} className={`flex-1 h-8 rounded-md cursor-pointer transition-all duration-200 ${i < waterCups ? "bg-gradient-to-t from-blue-400 to-cyan-300 shadow-sm" : "bg-muted hover:bg-muted/80"}`} />
               ))}
             </div>
             <button onClick={addWater} className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center active:scale-90 transition-transform hover:bg-primary/30">

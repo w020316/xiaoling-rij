@@ -250,7 +250,7 @@ export default function TodoPage() {
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-3xl lg:mx-auto">
       <header className="flex items-center justify-between mb-5 pt-2">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <CheckSquare size={22} className="text-primary" /> 待办列表
