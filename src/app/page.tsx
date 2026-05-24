@@ -72,6 +72,7 @@ export default function Home() {
   const [nickname, setNickname] = useState("");
   const [quote, setQuote] = useState("");
   const [exerciseMinutes, setExerciseMinutes] = useState(0);
+  const [memory, setMemory] = useState<{ type: string; content: string; date: string } | null>(null);
 
   useEffect(() => {
     setWaterCupsState(getWaterCups());
@@ -86,7 +87,7 @@ export default function Home() {
       fetch("/api/schedule").then((r) => r.json()),
       fetch("/api/user").then((r) => r.json()),
       fetch("/api/quote").then((r) => r.json()),
-    ]).then(([statsData, coupleData, emotionData, weatherData, scheduleData, userData, quoteData]) => {
+    ]).then(async ([statsData, coupleData, emotionData, weatherData, scheduleData, userData, quoteData]) => {
       setStats(statsData);
       setCouple(coupleData);
       if (emotionData) setTodayMood(emotionData.mood);
@@ -101,6 +102,28 @@ export default function Home() {
       setSchedules(todaySchedules);
       if (userData?.nickname) setNickname(userData.nickname);
       if (quoteData?.content) setQuote(quoteData.content);
+      try {
+        const lastYear = new Date();
+        lastYear.setFullYear(lastYear.getFullYear() - 1);
+        const lastYearDate = format(lastYear, "yyyy-MM-dd");
+        const [diaryRes, photoRes] = await Promise.all([
+          fetch(`/api/diary`),
+          fetch(`/api/photo`),
+        ]);
+        const diaries = await diaryRes.json();
+        const photos = await photoRes.json();
+        const lastYearDiary = Array.isArray(diaries)
+          ? diaries.find((d: any) => d.createdAt?.startsWith(lastYearDate))
+          : null;
+        if (lastYearDiary) {
+          setMemory({ type: "diary", content: lastYearDiary.title || lastYearDiary.content?.slice(0, 50), date: lastYearDate });
+        } else if (Array.isArray(photos)) {
+          const lastYearPhoto = photos.find((p: any) => p.createdAt?.startsWith(lastYearDate));
+          if (lastYearPhoto) {
+            setMemory({ type: "photo", content: lastYearPhoto.description || "一张照片", date: lastYearDate });
+          }
+        }
+      } catch {}
       try {
         const saved = localStorage.getItem("exercise-records");
         if (saved) {
@@ -173,7 +196,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="min-h-screen p-5 flex flex-col gap-5 pb-28">
+      <main className="min-h-screen p-5 lg:p-8 flex flex-col gap-5 pb-28 lg:pb-8">
         <header className="flex items-center justify-between pt-2">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full skeleton" />
@@ -198,7 +221,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen p-5 flex flex-col gap-5 pb-28">
+    <main className="min-h-screen p-5 lg:p-8 flex flex-col gap-5 pb-28 lg:pb-8">
       <header className="flex items-center justify-between pt-2 fade-in">
         <div className="flex items-center gap-3">
           <button onClick={handleCheckIn} className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-2xl float-animation">
@@ -369,15 +392,27 @@ export default function Home() {
           </h3>
           <span className="glass-badge bg-primary/10 text-primary">去年今天</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg emoji-bounce">
-            📸
+        {memory ? (
+          <Link href={memory.type === "diary" ? "/diary" : "/album"} className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg emoji-bounce">
+              {memory.type === "diary" ? "📔" : "📸"}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium group-hover:text-primary transition-colors">{memory.content}</p>
+              <p className="text-xs text-muted-foreground">{memory.date}</p>
+            </div>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg emoji-bounce">
+              📸
+            </div>
+            <div>
+              <p className="text-sm font-medium">去年的今天…</p>
+              <p className="text-xs text-muted-foreground">暂无回忆记录，继续记录生活吧 ✨</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium">去年的今天…</p>
-            <p className="text-xs text-muted-foreground">暂无回忆记录，继续记录生活吧 ✨</p>
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="glass-card p-4 fade-in">
@@ -405,7 +440,7 @@ export default function Home() {
       </div>
 
       <footer className="text-center text-[10px] text-muted-foreground/50 pt-2 pb-4">
-        v2.2.0
+        v2.3.0
       </footer>
     </main>
   );

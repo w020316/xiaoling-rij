@@ -203,7 +203,7 @@ export default function WeeklyPage() {
   }
 
   return (
-    <main className="min-h-screen p-5 pb-28">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
       <header className="flex items-center gap-4 mb-5 pt-2">
         <Link href="/ai" className="p-2 -ml-2 rounded-full hover:bg-muted">
           <ArrowLeft size={24} />

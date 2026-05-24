@@ -40,7 +40,7 @@ export default function DiaryPage() {
   });
 
   return (
-    <main className="min-h-screen p-5 pb-28">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
       <header className="flex items-center justify-between mb-5 pt-2">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <BookHeart size={22} className="text-primary" /> 日记本

@@ -95,7 +95,7 @@ export default function CaloriePage() {
   const mealLabel = (key: string) => meals.find((m) => m.key === key)?.label || key;
 
   return (
-    <main className="min-h-screen p-5 pb-28">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
       <header className="flex items-center gap-3 mb-5 pt-2">
         <Apple size={22} className="text-primary" />
         <h1 className="text-xl font-bold">热量管理</h1>

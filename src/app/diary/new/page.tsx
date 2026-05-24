@@ -136,7 +136,7 @@ export default function NewDiaryPage() {
   }
 
   return (
-    <main className="min-h-screen p-5 pb-28">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
       <header className="flex items-center gap-4 mb-5 pt-2 fade-in">
         <Link
           href="/diary"

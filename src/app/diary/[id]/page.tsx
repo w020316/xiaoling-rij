@@ -73,7 +73,7 @@ export default function DiaryDetailPage() {
 
   if (!diary) {
     return (
-      <main className="min-h-screen p-5 pb-28 flex items-center justify-center">
+      <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 flex items-center justify-center">
         <p className="text-muted-foreground">加载中...</p>
       </main>
     );
@@ -84,7 +84,7 @@ export default function DiaryDetailPage() {
   const isModified = updatedDate.getTime() - createdDate.getTime() > 1000;
 
   return (
-    <main className="min-h-screen p-5 pb-28">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
       <header className="flex items-center justify-between mb-5 pt-2 fade-in">
         <Link href="/diary" className="p-2 -ml-2 rounded-full hover:bg-muted">
           <ArrowLeft size={24} />

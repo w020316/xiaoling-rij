@@ -109,7 +109,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen p-5 pb-28">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
       <header className="flex flex-col items-center pt-4 mb-6 fade-in">
         <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-4xl mb-3 float-animation">
           {avatar}
@@ -204,7 +204,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="mt-6 text-center fade-in">
-        <p className="text-xs text-muted-foreground">恋爱日常 v2.2.0</p>
+        <p className="text-xs text-muted-foreground">恋爱日常 v2.3.0</p>
         <p className="text-xs text-muted-foreground mt-1">Made with 💕</p>
       </div>
     </main>

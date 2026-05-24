@@ -89,7 +89,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen p-5 pb-28">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
       <header className="flex items-center gap-3 mb-6 pt-2">
         <Link href="/profile" className="p-1 -ml-1 rounded-xl hover:bg-muted/50 transition-colors">
           <ArrowLeft size={22} className="text-primary" />
@@ -198,7 +198,7 @@ export default function SettingsPage() {
           <div className="flex flex-col gap-2 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">版本</span>
-              <span>v2.2.0</span>
+              <span>v2.3.0</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">GitHub</span>

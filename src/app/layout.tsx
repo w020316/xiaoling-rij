@@ -53,7 +53,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://wttr.in" />
         <link rel="preconnect" href="https://api.deepseek.com" />
       </head>
-      <body className={`${inter.className} min-h-screen max-w-md mx-auto relative shadow-2xl overflow-x-hidden`}>
+      <body className={`${inter.className} min-h-screen relative overflow-x-hidden`}>
         <ThemeProvider>
           <ResponsiveLayout>
             {children}

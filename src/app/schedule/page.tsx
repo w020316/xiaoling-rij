@@ -76,7 +76,7 @@ export default function SchedulePage() {
   }
 
   return (
-    <main className="min-h-screen p-5 pb-28">
+    <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
       <header className="flex items-center gap-3 mb-5 pt-2">
         <BookOpen size={22} className="text-primary" />
         <h1 className="text-xl font-bold">课程表</h1>
