@@ -142,13 +142,13 @@ export default function AiPage() {
 
   return (
     <main className="min-h-screen flex flex-col p-5 lg:p-8 pb-28 lg:pb-8">
-      <header className="p-5 pt-4 flex items-center gap-3 fade-in">
+      <header className="flex items-center gap-3 mb-2 fade-in">
         <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xl float-animation">
           🤖
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold">AI 小助手</h1>
+            <h1 className="text-lg lg:text-xl font-bold">AI 小助手</h1>
             {messageCount > 0 && (
               <span className="glass-badge bg-primary/10 text-primary scale-in">
                 {messageCount}条对话

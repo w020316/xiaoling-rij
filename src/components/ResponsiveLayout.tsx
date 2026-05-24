@@ -65,7 +65,7 @@ export function ResponsiveLayout({ children }: {
       </aside>
 
       <div className="lg:pl-64">
-        <div className="max-w-2xl mx-auto lg:max-w-3xl xl:max-w-4xl">
+        <div className="max-w-md mx-auto lg:max-w-none">
           {children}
         </div>
       </div>
