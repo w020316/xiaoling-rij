@@ -27,7 +27,10 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --ignore-scripts
+        run: npm install --legacy-peer-deps
+
+      - name: Generate Prisma client
+        run: npx prisma generate
 
       - name: Prepare for static export
         run: |
