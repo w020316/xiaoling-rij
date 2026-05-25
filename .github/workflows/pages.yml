@@ -29,23 +29,43 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps --ignore-scripts
 
+      - name: Prepare for static export
+        run: |
+          rm -rf src/app/_api_backup src/app/_diary_id_backup
+          mv src/app/api src/app/_api_backup || true
+          mv "src/app/diary/[id]" "src/app/_diary_id_backup" || true
+          rm -rf .next
+
       - name: Build static export
         env:
           NEXT_OUTPUT: export
           NODE_ENV: production
-        run: npx next build 2>&1 || true
+        run: npx next build 2>&1
 
-      - name: Check if out directory exists
+      - name: Restore excluded routes
         run: |
-          echo "Checking build output..."
-          ls -la ./out/ 2>/dev/null && echo "out exists" || echo "out NOT found"
-          ls -la . 2>/dev/null | head -20
+          mv src/app/_api_backup src/app/api || true
+          mv "src/app/_diary_id_backup" "src/app/diary/[id]" || true
 
-      - name: Prepare deploy directory
+      - name: Verify output
         run: |
-          mkdir -p out
+          echo "=== Output structure ==="
+          find ./out/xiaoling-rij -type f | head -40
+          echo ""
+          echo "=== Total files ==="
+          find ./out/xiaoling-rij -type f | wc -l
+
+      - name: Deploy preparation
+        run: |
           touch out/.nojekyll
-          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=/xiaoling-rij/"><meta charset="utf-8"><title>恋爱日常</title></head><body style="font-family:sans-serif;text-align:center;padding-top:40vh"><p>正在跳转... <a href="/xiaoling-rij/">点击访问</a></p></body></html>' > out/index.html
+          cat > out/index.html << 'EOF'
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/xiaoling-rij/"><title>恋爱日常</title></head>
+<body style="font-family:sans-serif;text-align:center;padding-top:40vh;color:#6b7280">
+<p>正在跳转到恋爱日常...</p>
+<p style="margin-top:12px"><a href="/xiaoling-rij/" style="color:#a855f7">点击访问</a></p>
+</body></html>
+EOF
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -54,4 +74,4 @@ jobs:
           publish_dir: ./out
           publish_branch: gh-pages
           force_orphan: true
-          commit_message: "deploy: ${{ github.sha }}"
+          commit_message: "deploy: v${{ github.sha }}"
