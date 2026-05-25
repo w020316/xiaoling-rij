@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { BottomNav } from "@/components/BottomNav";
 import { ResponsiveLayout } from "@/components/ResponsiveLayout";
+import { StaticInit } from "@/components/StaticInit";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -54,6 +55,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://api.deepseek.com" />
       </head>
       <body className={`${inter.className} min-h-screen relative overflow-x-hidden`}>
+        <StaticInit />
         <ThemeProvider>
           <ResponsiveLayout>
             {children}
