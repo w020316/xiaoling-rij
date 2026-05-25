@@ -62,8 +62,8 @@ jobs:
         run: |
           echo "=== Before: out/ structure ==="
           ls out/
-          cp -r out/xiaoling-rij/* out/
-          cp -r out/xiaoling-rij/.next out/ 2>/dev/null || true
+          shopt -s dotglob
+          cp -a out/xiaoling-rij/. out/ || { echo "COPY FAILED"; ls out/xiaoling-rij/ | head -5; exit 1; }
           rm -rf out/xiaoling-rij
           touch out/.nojekyll
           echo "=== After: out/ structure ==="
