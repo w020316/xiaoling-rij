@@ -58,10 +58,19 @@ jobs:
           echo "=== Total files ==="
           find ./out/xiaoling-rij -type f | wc -l
 
-      - name: Write redirect page
+      - name: Flatten output for GitHub Pages
         run: |
+          echo "=== Before: out/ structure ==="
+          ls out/
+          cp -r out/xiaoling-rij/* out/
+          cp -r out/xiaoling-rij/.next out/ 2>/dev/null || true
+          rm -rf out/xiaoling-rij
           touch out/.nojekyll
-          echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/xiaoling-rij/"><title>恋爱日常</title></head><body style="font-family:sans-serif;text-align:center;padding-top:40vh;color:#6b7280"><p>正在跳转到恋爱日常...</p><p style="margin-top:12px"><a href="/xiaoling-rij/" style="color:#a855f7">点击访问</a></p></body></html>' > out/index.html
+          echo "=== After: out/ structure ==="
+          ls out/ | head -20
+          echo ""
+          echo "=== Total files ==="
+          find ./out -type f | wc -l
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
