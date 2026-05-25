@@ -62,8 +62,10 @@ jobs:
         run: |
           echo "=== Before: out/ structure ==="
           ls out/
-          shopt -s dotglob
-          cp -a out/xiaoling-rij/. out/ || { echo "COPY FAILED"; ls out/xiaoling-rij/ | head -5; exit 1; }
+          echo ""
+          echo "=== xiaoling-rij contents ==="
+          ls out/xiaoling-rij/ | head -10
+          rsync -a --delete out/xiaoling-rij/ out/ --exclude=xiaoling-rij
           rm -rf out/xiaoling-rij
           touch out/.nojekyll
           echo "=== After: out/ structure ==="
