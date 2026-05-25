@@ -9,8 +9,6 @@ const nextConfig: NextConfig = {
         output: "export",
         images: { unoptimized: true },
         trailingSlash: true,
-        basePath: "/xiaoling-rij",
-        assetPrefix: "/xiaoling-rij",
       }
     : {
         images: {

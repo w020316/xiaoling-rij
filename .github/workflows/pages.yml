@@ -50,29 +50,19 @@ jobs:
           mv src/app/_api_backup src/app/api || true
           mv "src/app/_diary_id_backup" "src/app/diary/[id]" || true
 
-      - name: Verify output
+      - name: Verify output & prepare for GitHub Pages
         run: |
           echo "=== Output structure ==="
-          find ./out/xiaoling-rij -type f | head -40
-          echo ""
-          echo "=== Total files ==="
-          find ./out/xiaoling-rij -type f | wc -l
-
-      - name: Flatten output for GitHub Pages
-        run: |
-          echo "=== Before: out/ structure ==="
           ls out/
           echo ""
-          echo "=== xiaoling-rij contents ==="
-          ls out/xiaoling-rij/ | head -10
-          rsync -a --delete out/xiaoling-rij/ out/ --exclude=xiaoling-rij
-          rm -rf out/xiaoling-rij
-          touch out/.nojekyll
-          echo "=== After: out/ structure ==="
-          ls out/ | head -20
+          echo "=== Key files ==="
+          ls out/*.html out/_next/ 2>/dev/null | head -10
           echo ""
           echo "=== Total files ==="
           find ./out -type f | wc -l
+
+          touch out/.nojekyll
+          cp out/index.html out/404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
