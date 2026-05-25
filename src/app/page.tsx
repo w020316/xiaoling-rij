@@ -135,7 +135,9 @@ export default function Home() {
             setMemory({ type: "photo", content: lastYearPhoto.description || "一张照片", date: lastYearDate });
           }
         }
-      } catch {}
+      } catch {
+        console.warn("无法加载去年今日回忆");
+      }
       try {
         const saved = localStorage.getItem("exercise-records");
         if (saved) {
@@ -144,7 +146,9 @@ export default function Home() {
           const todayRecords = records.filter((r: any) => r.date === todayStr);
           setExerciseMinutes(todayRecords.reduce((s: number, r: any) => s + r.duration, 0));
         }
-      } catch {}
+      } catch {
+        console.warn("无法加载本地运动记录");
+      }
       setLoading(false);
     }).catch(() => {
       setLoading(false);
@@ -255,11 +259,11 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="glass-card p-4 text-center relative overflow-hidden fade-in">
+        <div className="glass-card p-4 text-center relative overflow-hidden fade-in breathe-border">
           <div className="absolute top-2 right-3 text-primary/40 text-2xl emoji-bounce">💖</div>
           <p className="text-sm text-muted-foreground mb-1">在一起</p>
-          <h2 className="text-4xl font-bold text-primary flex items-end justify-center gap-1">
-            第 <span className="text-5xl">{coupleDays}</span> 天
+          <h2 className="text-4xl font-bold flex items-end justify-center gap-1">
+            第 <span className="text-5xl gradient-text">{coupleDays}</span> 天
           </h2>
           {couple && (
             <p className="text-xs text-muted-foreground mt-2">
@@ -295,19 +299,19 @@ export default function Home() {
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <Link href="/todo" className="glass-card p-4 flex flex-col items-center gap-2 slide-up stagger-1">
+          <Link href="/todo" className="glass-card p-4 flex flex-col items-center gap-2 slide-up stagger-1 card-shine hover-lift">
             <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-xl">
               <CheckSquare size={22} />
             </div>
             <span className="font-medium text-sm">今日待办</span>
             <span className="text-xs text-muted-foreground">{stats?.pendingTodoCount || 0} 项待完成</span>
           </Link>
-          <Link href="/diary" className="glass-card p-4 flex flex-col items-center gap-2 slide-up stagger-2">
+          <Link href="/diary" className="glass-card p-4 flex flex-col items-center gap-2 slide-up stagger-2 card-shine hover-lift">
             <div className="p-2.5 bg-pink-500/10 text-pink-500 rounded-xl"><Heart size={22} /></div>
             <span className="font-medium text-sm">今日日记</span>
             <span className="text-xs text-muted-foreground">记录心情</span>
           </Link>
-          <div className="glass-card p-4 flex flex-col items-center gap-2 slide-up stagger-3">
+          <div className="glass-card p-4 flex flex-col items-center gap-2 slide-up stagger-3 card-shine hover-lift">
             <div className="p-2.5 bg-orange-500/10 text-orange-500 rounded-xl"><Droplets size={22} /></div>
             <span className="font-medium text-sm">喝水提醒</span>
             <div className="flex items-center gap-2">
@@ -325,7 +329,7 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <Link href="/health" className="glass-card p-4 flex flex-col items-center gap-2 slide-up stagger-4">
+          <Link href="/health" className="glass-card p-4 flex flex-col items-center gap-2 slide-up stagger-4 card-shine hover-lift">
             <div className="p-2.5 bg-green-500/10 text-green-500 rounded-xl"><Dumbbell size={22} /></div>
             <span className="font-medium text-sm">运动提醒</span>
             <span className="text-xs text-muted-foreground">今日 {exerciseMinutes} 分钟</span>
@@ -431,12 +435,12 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="col-span-2 glass-card p-6 relative overflow-hidden fade-in">
+        <div className="col-span-2 glass-card p-6 relative overflow-hidden fade-in breathe-border">
           <div className="absolute -top-4 -right-4 text-7xl opacity-15 emoji-bounce">💖</div>
           <div className="relative z-10">
             <p className="text-sm text-muted-foreground mb-1">在一起</p>
-            <h2 className="text-5xl font-bold text-primary flex items-end gap-2">
-              第 <span className="text-6xl">{coupleDays}</span> 天
+            <h2 className="text-5xl font-bold flex items-end gap-2">
+              第 <span className="text-6xl gradient-text">{coupleDays}</span> 天
             </h2>
             {couple && (
               <p className="text-sm text-muted-foreground mt-2">
@@ -469,7 +473,7 @@ export default function Home() {
           </div>
         )}
 
-        <Link href="/todo" className="glass-card p-5 flex items-center gap-4 hover:bg-primary/5 transition-colors slide-up stagger-1 group">
+        <Link href="/todo" className="glass-card p-5 flex items-center gap-4 hover:bg-primary/5 transition-colors slide-up stagger-1 group card-shine hover-lift">
           <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <CheckSquare size={24} />
           </div>
@@ -479,7 +483,7 @@ export default function Home() {
           </div>
         </Link>
 
-        <Link href="/diary" className="glass-card p-5 flex items-center gap-4 hover:bg-pink-500/5 transition-colors slide-up stagger-2 group">
+        <Link href="/diary" className="glass-card p-5 flex items-center gap-4 hover:bg-pink-500/5 transition-colors slide-up stagger-2 group card-shine hover-lift">
           <div className="w-12 h-12 rounded-xl bg-pink-500/10 text-pink-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <Heart size={24} />
           </div>
@@ -489,7 +493,7 @@ export default function Home() {
           </div>
         </Link>
 
-        <Link href="/health" className="glass-card p-5 flex items-center gap-4 hover:bg-green-500/5 transition-colors slide-up stagger-3 group">
+        <Link href="/health" className="glass-card p-5 flex items-center gap-4 hover:bg-green-500/5 transition-colors slide-up stagger-3 group card-shine hover-lift">
           <div className="w-12 h-12 rounded-xl bg-green-500/10 text-green-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <Dumbbell size={24} />
           </div>
@@ -499,7 +503,7 @@ export default function Home() {
           </div>
         </Link>
 
-        <Link href="/album" className="glass-card p-5 flex items-center gap-4 hover:bg-purple-500/5 transition-colors slide-up stagger-4 group">
+        <Link href="/album" className="glass-card p-5 flex items-center gap-4 hover:bg-purple-500/5 transition-colors slide-up stagger-4 group card-shine hover-lift">
           <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <CameraIcon size={24} />
           </div>

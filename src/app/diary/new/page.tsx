@@ -37,6 +37,7 @@ export default function NewDiaryPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiContent, setAiContent] = useState("");
   const [viewMode, setViewMode] = useState<"original" | "ai">("original");
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -106,7 +107,7 @@ export default function NewDiaryPage() {
       setAiContent(data.content || "");
       setViewMode("ai");
     } catch {
-      setAiContent("");
+      setError("AI扩写失败，请重试");
     } finally {
       setAiLoading(false);
     }
@@ -132,7 +133,9 @@ export default function NewDiaryPage() {
         }),
       });
       router.push("/diary");
-    } catch {}
+    } catch {
+      setError("保存失败，请重试");
+    }
   }
 
   return (
@@ -146,6 +149,15 @@ export default function NewDiaryPage() {
         </Link>
         <h1 className="text-xl font-bold flex-1 text-center pr-8">写日记</h1>
       </header>
+
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col gap-4">
         <input

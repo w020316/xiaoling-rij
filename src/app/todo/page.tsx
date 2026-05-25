@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   CheckSquare, Plus, Sparkles,
   CheckCircle2, Circle, Clock, AlertTriangle, Flag, Trash2,
-  GripVertical, BarChart3, Target
+  GripVertical, BarChart3, Target, X
 } from "lucide-react";
 import Link from "next/link";
 
@@ -87,6 +87,8 @@ export default function TodoPage() {
   const [swipeX, setSwipeX] = useState<Record<string, number>>({});
   const touchStartX = useRef<Record<string, number>>({});
   const touchCurrentX = useRef<Record<string, number>>({});
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTodos();
@@ -108,11 +110,16 @@ export default function TodoPage() {
   }, []);
 
   async function fetchTodos() {
+    setFetchError(null);
     try {
       const res = await fetch("/api/todo");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setTodos(applyOrder(data));
-    } catch {}
+      setTodos(applyOrder(Array.isArray(data) ? data : []));
+    } catch (err: any) {
+      setFetchError("加载失败，请下拉刷新重试");
+      console.warn("fetchTodos failed:", err.message || err);
+    }
   }
 
   async function toggleTodo(id: string, isDone: boolean) {
@@ -124,21 +131,36 @@ export default function TodoPage() {
         setConfettiId(null);
       }, 600);
     }
+    setTodos((prev) =>
+      prev.map((t) =>
+        t.id === id ? { ...t, isDone: !isDone, status: !isDone ? "completed" : "pending" } : t
+      )
+    );
     try {
       await fetch(`/api/todo/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isDone: !isDone, status: !isDone ? "completed" : "pending" }),
       });
+    } catch (err: any) {
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, isDone, status: isDone ? "completed" : "pending" } : t
+        )
+      );
+    } finally {
       fetchTodos();
-    } catch {}
+    }
   }
 
   async function deleteTodo(id: string) {
     try {
       await fetch(`/api/todo/${id}`, { method: "DELETE" });
-      fetchTodos();
-    } catch {}
+      setTodos((prev) => prev.filter((t) => t.id !== id));
+    } catch {
+      setFetchError("删除失败，请重试");
+    }
+    setDeleteId(null);
   }
 
   async function handleAiGenerate() {
@@ -171,7 +193,9 @@ export default function TodoPage() {
       }
       setShowAi(false);
       setAiGoal("");
-    } catch {} finally {
+    } catch (err: any) {
+      setFetchError(`AI生成失败: ${err.message || "请稍后重试"}`);
+    } finally {
       setAiLoading(false);
     }
   }
@@ -270,6 +294,28 @@ export default function TodoPage() {
           </Link>
         </div>
       </header>
+
+      {fetchError && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{fetchError}</span>
+          <button onClick={() => setFetchError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {deleteId && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
+          <div className="glass-card p-6 mx-4 max-w-xs w-full text-center slide-up">
+            <p className="text-lg font-bold mb-2">确认删除</p>
+            <p className="text-sm text-muted-foreground mb-5">删除后无法恢复，确定要删除吗？</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteId(null)} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
+              <button onClick={() => deleteTodo(deleteId)} className="glass-button bg-red-500 text-white flex-1 py-2 text-sm">删除</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAi && (
         <div className="glass-card p-4 lg:p-5 mb-4 fade-in">
@@ -430,7 +476,7 @@ export default function TodoPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => deleteTodo(todo.id)}
+                    onClick={() => setDeleteId(todo.id)}
                     className="text-muted-foreground/50 hover:text-red-500 p-1 hidden sm:block"
                   >
                     <Trash2 size={16} />
@@ -469,7 +515,7 @@ export default function TodoPage() {
                       </span>
                     )}
                     <button
-                      onClick={() => deleteTodo(todo.id)}
+                      onClick={() => setDeleteId(todo.id)}
                       className="text-muted-foreground/50 hover:text-red-500 p-1"
                     >
                       <Trash2 size={16} />

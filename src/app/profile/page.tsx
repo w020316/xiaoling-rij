@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import {
-  Palette, Heart, ChevronRight, User
+  Palette, Heart, ChevronRight, User, X
 } from "lucide-react";
 import Link from "next/link";
 
@@ -48,6 +48,7 @@ export default function ProfilePage() {
   const [nickname, setNickname] = useState("小林");
   const [avatar, setAvatar] = useState("🐱");
   const [checkedIn, setCheckedIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const storedAvatar = localStorage.getItem("user-avatar");
@@ -62,12 +63,16 @@ export default function ProfilePage() {
           localStorage.setItem("user-avatar", data.avatar);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        console.warn("加载用户信息失败");
+      });
 
     fetch("/api/user/stats")
       .then((r) => r.json())
       .then(setStats)
-      .catch(() => {});
+      .catch(() => {
+        console.warn("加载统计信息失败");
+      });
   }, []);
 
   const themes = [
@@ -103,7 +108,9 @@ export default function ProfilePage() {
         setCheckedIn(true);
         setStats((prev) => prev ? { ...prev, checkInDays: prev.checkInDays + 1 } : prev);
       }
-    } catch {}
+    } catch {
+      setError("打卡失败，请重试");
+    }
   }
 
   return (
@@ -123,6 +130,15 @@ export default function ProfilePage() {
           <User size={10} /> 编辑资料
         </Link>
       </header>
+
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="glass-card p-4 mb-4 slide-up">
         <div className="grid grid-cols-4 gap-3 text-center">

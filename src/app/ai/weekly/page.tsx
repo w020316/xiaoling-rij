@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Sparkles, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
+import { ArrowLeft, Sparkles, TrendingUp, TrendingDown, BarChart3, X } from "lucide-react";
 import Link from "next/link";
 
 interface Todo {
@@ -59,6 +59,7 @@ export default function WeeklyPage() {
   const [emotions, setEmotions] = useState<EmotionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState("");
   const [studyHours, setStudyHours] = useState<number | null>(null);
   const [exerciseHours, setExerciseHours] = useState<number | null>(null);
@@ -106,8 +107,9 @@ export default function WeeklyPage() {
           const totalMin = weekRecords.reduce((s: number, r: any) => s + r.duration, 0);
           setStudyHours(Math.round((totalMin / 60) * 10) / 10);
         }
-      } catch {}
+      } catch { setError("加载运动/学习记录失败") }
     } catch {
+      setError("加载本周数据失败，请稍后重试")
     } finally {
       setLoading(false);
     }
@@ -196,6 +198,7 @@ export default function WeeklyPage() {
       const data = await res.json();
       setAnalysis(data.content || "生成失败，请稍后再试～ 💫");
     } catch {
+      setError("AI分析生成失败，请稍后重试")
       setAnalysis("网络好像有点问题呢，稍后再试试吧～ 💫");
     } finally {
       setGenerating(false);
@@ -221,6 +224,15 @@ export default function WeeklyPage() {
           回顾这一周，看见自己的成长 🌱
         </p>
       </div>
+
+      {error && (
+        <div className="glass-card p-3 mb-5 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 mb-5">
         {stats.map((stat, i) => (

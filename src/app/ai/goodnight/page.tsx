@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Sparkles, Save, Moon, CheckCircle2, BookOpen, Activity, Smile, Lightbulb } from "lucide-react";
+import { ArrowLeft, Sparkles, Save, Moon, CheckCircle2, BookOpen, Activity, Smile, Lightbulb, X } from "lucide-react";
 import Link from "next/link";
 
 interface Todo {
@@ -34,6 +34,7 @@ export default function GoodnightPage() {
   const [emotion, setEmotion] = useState<Emotion | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -71,8 +72,9 @@ export default function GoodnightPage() {
           const totalMin = todayRecords.reduce((s: number, r: any) => s + r.duration, 0);
           setStudyMinutes(totalMin > 0 ? totalMin : null);
         }
-      } catch {}
+      } catch { setError("加载运动/学习记录失败") }
     } catch {
+      setError("加载今日数据失败，请稍后重试")
     } finally {
       setLoading(false);
     }
@@ -105,6 +107,7 @@ export default function GoodnightPage() {
       const data = await res.json();
       setSummary(data.content || "生成失败，请稍后再试～ 💫");
     } catch {
+      setError("AI总结生成失败，请稍后重试")
       setSummary("网络好像有点问题呢，稍后再试试吧～ 💫");
     } finally {
       setGenerating(false);
@@ -127,6 +130,7 @@ export default function GoodnightPage() {
       });
       setSaved(true);
     } catch {
+      setError("保存失败，请稍后重试")
     } finally {
       setSaving(false);
     }
@@ -193,6 +197,15 @@ export default function GoodnightPage() {
           回顾今天，温柔地和自己说晚安 ✨
         </p>
       </div>
+
+      {error && (
+        <div className="glass-card p-3 mb-5 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 mb-5">
         {sections.map((section, i) => (

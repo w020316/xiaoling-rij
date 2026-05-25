@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Apple, Search, Trash2 } from "lucide-react";
+import { Apple, Search, Trash2, X } from "lucide-react";
 
 const foodDatabase: Record<string, { calories: number; protein: number; fat: number; carbs: number }> = {
   "鸡胸肉": { calories: 165, protein: 31, fat: 3.6, carbs: 0 },
@@ -36,6 +36,7 @@ export default function CaloriePage() {
   const [selectedMeal, setSelectedMeal] = useState("lunch");
   const [records, setRecords] = useState<CalorieRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const meals = [
     { key: "breakfast", label: "早餐" },
@@ -82,14 +83,18 @@ export default function CaloriePage() {
       const record = await res.json();
       setRecords((prev) => [...prev, record]);
       setSearch("");
-    } catch {}
+    } catch {
+      setError("添加食物失败，请重试");
+    }
   }
 
   async function deleteRecord(id: string) {
     try {
       await fetch(`/api/calorie?id=${id}`, { method: "DELETE" });
       setRecords((prev) => prev.filter((r) => r.id !== id));
-    } catch {}
+    } catch {
+      setError("删除失败，请重试");
+    }
   }
 
   const mealLabel = (key: string) => meals.find((m) => m.key === key)?.label || key;
@@ -100,6 +105,15 @@ export default function CaloriePage() {
         <Apple size={22} className="text-primary" />
         <h1 className="text-xl font-bold">热量管理</h1>
       </header>
+
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="glass-card p-4 mb-4">
         <div className="text-center mb-3">

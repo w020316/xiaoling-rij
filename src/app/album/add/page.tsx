@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Camera } from "lucide-react";
+import { ArrowLeft, Camera, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -23,6 +23,7 @@ export default function AddPhotoPage() {
   const [photoTime, setPhotoTime] = useState("");
   const [category, setCategory] = useState("all");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
@@ -50,7 +51,7 @@ export default function AddPhotoPage() {
         body: formData,
       });
       router.push("/album");
-    } catch {} finally {
+    } catch { setError("上传失败，请重试"); } finally {
       setLoading(false);
     }
   }
@@ -63,6 +64,15 @@ export default function AddPhotoPage() {
         </Link>
         <h1 className="text-xl font-bold flex-1 text-center pr-8">上传照片</h1>
       </header>
+
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col gap-4">
         <label className="glass-card p-6 flex flex-col items-center gap-3 cursor-pointer border-dashed border-2 border-primary/30">

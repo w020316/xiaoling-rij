@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Send, RotateCcw, Copy, Check } from "lucide-react";
+import { Send, RotateCcw, Copy, Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Message {
@@ -32,6 +32,7 @@ export default function AiPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +48,7 @@ export default function AiPage() {
           return;
         }
       }
-    } catch {}
+    } catch { setError("无法加载历史消息") }
     setMessages([
       {
         role: "assistant",
@@ -62,7 +63,7 @@ export default function AiPage() {
     if (!mounted) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    } catch {}
+    } catch { setError("消息保存失败") }
   }, [messages, mounted]);
 
   const scrollToBottom = useCallback(() => {
@@ -102,6 +103,7 @@ export default function AiPage() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch {
+      setError("消息发送失败，请检查网络连接")
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: "网络好像有点问题，稍后再试试吧～ 💫", timestamp: Date.now() },
@@ -127,7 +129,7 @@ export default function AiPage() {
       await navigator.clipboard.writeText(text);
       setCopiedIdx(idx);
       setTimeout(() => setCopiedIdx(null), 2000);
-    } catch {}
+    } catch { setError("复制失败") }
   }
 
   function handleQuickAction(action: (typeof QUICK_ACTIONS)[number]) {
@@ -165,6 +167,15 @@ export default function AiPage() {
           <RotateCcw size={18} className="text-muted-foreground" />
         </button>
       </header>
+
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in max-w-3xl mx-auto w-full">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div
         ref={scrollRef}

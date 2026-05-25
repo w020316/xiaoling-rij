@@ -27,7 +27,9 @@ export function ResponsiveLayout({ children }: {
     <div className="min-h-screen">
       <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:flex-col lg:border-r lg:border-border glass z-40">
         <div className="p-6">
-          <h1 className="text-xl font-bold text-primary flex items-center gap-2">💕 恋爱日常</h1>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <span className="gradient-text">💕 恋爱日常</span>
+          </h1>
           <p className="text-xs text-muted-foreground mt-1">Love Daily AI</p>
         </div>
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
@@ -37,10 +39,10 @@ export function ResponsiveLayout({ children }: {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
                   isActive
-                    ? "text-foreground bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
+                    ? "text-foreground bg-primary/10 shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-primary/5 hover:translate-x-1"
                 }`}
               >
                 <span className="text-lg">{item.emoji}</span>

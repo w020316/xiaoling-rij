@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Trash2, MapPin, CloudSun, Tag, Calendar, Pencil, Save, X, Clock } from "lucide-react";
 import Link from "next/link";
@@ -29,6 +29,8 @@ export default function DiaryDetailPage() {
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [parsedAiData, setParsedAiData] = useState<any>(null);
 
   useEffect(() => {
     fetch(`/api/diary/${params.id}`)
@@ -39,6 +41,16 @@ export default function DiaryDetailPage() {
         setEditContent(data.content);
       });
   }, [params.id]);
+
+  useEffect(() => {
+    if (diary?.aiContent) {
+      try {
+        setParsedAiData(JSON.parse(diary.aiContent));
+      } catch {
+        setParsedAiData(null);
+      }
+    }
+  }, [diary?.aiContent]);
 
   async function handleSave() {
     if (!diary) return;
@@ -52,8 +64,12 @@ export default function DiaryDetailPage() {
       const updated = await res.json();
       setDiary(updated);
       setIsEditing(false);
-    } catch {}
-    setSaving(false);
+      setError(null);
+    } catch {
+      setError("保存失败，请重试");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete() {
@@ -61,8 +77,13 @@ export default function DiaryDetailPage() {
       setShowDeleteConfirm(true);
       return;
     }
-    await fetch(`/api/diary/${params.id}`, { method: "DELETE" });
-    router.push("/diary");
+    try {
+      await fetch(`/api/diary/${params.id}`, { method: "DELETE" });
+      router.push("/diary");
+    } catch {
+      setError("删除失败，请重试");
+      setShowDeleteConfirm(false);
+    }
   }
 
   function cancelEdit() {
@@ -110,22 +131,24 @@ export default function DiaryDetailPage() {
         </div>
       </header>
 
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {showDeleteConfirm && (
-        <div className="glass-card p-4 mb-4 flex items-center justify-between slide-up">
-          <p className="text-sm text-red-500">确定要删除这篇日记吗？</p>
-          <div className="flex gap-2">
-            <button
-              onClick={handleDelete}
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white"
-            >
-              删除
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="glass-button-outline px-3 py-1.5 text-xs"
-            >
-              取消
-            </button>
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
+          <div className="glass-card p-6 mx-4 max-w-xs w-full text-center slide-up">
+            <p className="text-lg font-bold mb-2">确认删除</p>
+            <p className="text-sm text-muted-foreground mb-5">删除后无法恢复，确定要删除吗？</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
+              <button onClick={handleDelete} className="glass-button bg-red-500 text-white flex-1 py-2 text-sm">删除</button>
+            </div>
           </div>
         </div>
       )}
@@ -209,35 +232,30 @@ export default function DiaryDetailPage() {
         {diary.aiExpanded && diary.aiContent && (
           <div className="glass-card p-5 fade-in stagger-2">
             <h3 className="text-sm font-bold text-primary mb-3">✨ AI 生成内容</h3>
-            {(() => {
-              try {
-                const aiData = JSON.parse(diary.aiContent);
-                return (
-                  <div className="flex flex-col gap-3">
-                    {aiData.moments && (
-                      <div>
-                        <p className="text-xs font-bold mb-1">💬 朋友圈文案</p>
-                        <p className="text-sm text-muted-foreground">{aiData.moments}</p>
-                      </div>
-                    )}
-                    {aiData.xiaohongshu && (
-                      <div>
-                        <p className="text-xs font-bold mb-1">📕 小红书文案</p>
-                        <p className="text-sm text-muted-foreground">{aiData.xiaohongshu}</p>
-                      </div>
-                    )}
-                    {aiData.memorial && (
-                      <div>
-                        <p className="text-xs font-bold mb-1">💝 纪念文字</p>
-                        <p className="text-sm text-muted-foreground">{aiData.memorial}</p>
-                      </div>
-                    )}
+            {parsedAiData ? (
+              <div className="flex flex-col gap-3">
+                {parsedAiData.moments && (
+                  <div>
+                    <p className="text-xs font-bold mb-1">💬 朋友圈文案</p>
+                    <p className="text-sm text-muted-foreground">{parsedAiData.moments}</p>
                   </div>
-                );
-              } catch {
-                return <p className="text-sm text-muted-foreground">{diary.aiContent}</p>;
-              }
-            })()}
+                )}
+                {parsedAiData.xiaohongshu && (
+                  <div>
+                    <p className="text-xs font-bold mb-1">📕 小红书文案</p>
+                    <p className="text-sm text-muted-foreground">{parsedAiData.xiaohongshu}</p>
+                  </div>
+                )}
+                {parsedAiData.memorial && (
+                  <div>
+                    <p className="text-xs font-bold mb-1">💝 纪念文字</p>
+                    <p className="text-sm text-muted-foreground">{parsedAiData.memorial}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">{diary.aiContent}</p>
+            )}
           </div>
         )}
       </div>

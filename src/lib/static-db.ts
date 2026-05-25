@@ -376,6 +376,14 @@ export const staticDB = {
     dbSet("emotions", arr);
     return e;
   },
+  updateEmotion(id: string, data: Partial<StoredEmotion>): StoredEmotion | null {
+    const arr = dbGet<StoredEmotion[]>("emotions", []);
+    const idx = arr.findIndex(e => e.id === id);
+    if (idx === -1) return null;
+    arr[idx] = { ...arr[idx], ...data };
+    dbSet("emotions", arr);
+    return arr[idx];
+  },
   deleteEmotion(id: string): boolean {
     const arr = dbGet<StoredEmotion[]>("emotions", []).filter(e => e.id !== id);
     dbSet("emotions", arr);

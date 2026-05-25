@@ -41,6 +41,7 @@ export default function AlbumPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [aiSearching, setAiSearching] = useState(false);
   const [aiResult, setAiResult] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPhotos();
@@ -52,7 +53,7 @@ export default function AlbumPage() {
       const res = await fetch("/api/photo");
       const data = await res.json();
       setPhotos(data);
-    } catch {}
+    } catch { setError("加载失败，请刷新重试"); }
   }
 
   async function fetchLastYearPhoto() {
@@ -81,6 +82,7 @@ export default function AlbumPage() {
         setHasLastYearPhoto(false);
       }
     } catch {
+      setError("加载失败，请刷新重试");
       setHasLastYearPhoto(false);
     }
   }
@@ -101,7 +103,7 @@ export default function AlbumPage() {
       if (selectedPhoto?.id === photo.id) {
         setSelectedPhoto((prev) => prev ? { ...prev, isFavorite: !prev.isFavorite } : null);
       }
-    } catch {}
+    } catch { setError("收藏操作失败，请重试"); }
   }, [selectedPhoto]);
 
   const deletePhoto = useCallback(async (id: string) => {
@@ -110,7 +112,7 @@ export default function AlbumPage() {
       setPhotos((prev) => prev.filter((p) => p.id !== id));
       if (selectedPhoto?.id === id) setSelectedPhoto(null);
       setDeleteConfirm(null);
-    } catch {}
+    } catch { setError("删除失败，请重试"); setDeleteConfirm(null); }
   }, [selectedPhoto]);
 
   async function handleAiSearch() {
@@ -128,6 +130,7 @@ export default function AlbumPage() {
       const data = await res.json();
       setAiResult(data.content || data.reply || "暂无结果");
     } catch {
+      setError("AI搜索暂时不可用，请稍后再试～");
       setAiResult("AI搜索暂时不可用，请稍后再试～");
     } finally {
       setAiSearching(false);
@@ -183,6 +186,15 @@ export default function AlbumPage() {
           </Link>
         </div>
       </header>
+
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {showSearch && (
         <div className="mb-4 slide-up lg:mb-6">
@@ -345,28 +357,6 @@ export default function AlbumPage() {
                       className={photo.isFavorite ? "text-red-500 fill-red-500" : "text-white/80"}
                     />
                   </button>
-                  {deleteConfirm === photo.id && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center gap-2 z-10">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deletePhoto(photo.id);
-                        }}
-                        className="glass-button px-3 py-1.5 text-xs"
-                      >
-                        确认删除
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteConfirm(null);
-                        }}
-                        className="glass-button-outline px-3 py-1.5 text-xs"
-                      >
-                        取消
-                      </button>
-                    </div>
-                  )}
                 </div>
                 <div className="p-2.5">
                   <p className="text-xs line-clamp-1">{photo.description || "无描述"}</p>
@@ -464,6 +454,19 @@ export default function AlbumPage() {
               >
                 <Trash2 size={15} /> 删除照片
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
+          <div className="glass-card p-6 mx-4 max-w-xs w-full text-center slide-up">
+            <p className="text-lg font-bold mb-2">确认删除</p>
+            <p className="text-sm text-muted-foreground mb-5">删除后无法恢复，确定要删除吗？</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirm(null)} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
+              <button onClick={() => deleteConfirm && deletePhoto(deleteConfirm)} className="glass-button bg-red-500 text-white flex-1 py-2 text-sm">删除</button>
             </div>
           </div>
         </div>

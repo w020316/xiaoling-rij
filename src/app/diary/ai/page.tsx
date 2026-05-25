@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 
 export default function AiDiaryPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleGenerate() {
     if (!input.trim() || loading) return;
@@ -20,7 +21,10 @@ export default function AiDiaryPage() {
       });
       const data = await res.json();
       setResult(data);
-    } catch {} finally {
+      setError(null);
+    } catch {
+      setError("AI生成失败，请重试");
+    } finally {
       setLoading(false);
     }
   }
@@ -40,7 +44,9 @@ export default function AiDiaryPage() {
         }),
       });
       window.location.href = "/diary";
-    } catch {}
+    } catch {
+      setError("保存失败，请重试");
+    }
   }
 
   return (
@@ -51,6 +57,15 @@ export default function AiDiaryPage() {
         </Link>
         <h1 className="text-xl font-bold flex-1 text-center pr-8">AI 日记</h1>
       </header>
+
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {!result ? (
         <div className="flex flex-col gap-4">

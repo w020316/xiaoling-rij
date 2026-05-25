@@ -80,6 +80,7 @@ export default function HealthPage() {
   const [sleepRecords, setSleepRecords] = useState<SleepRecord[]>([]);
   const [studyRecords, setStudyRecords] = useState<StudyRecord[]>([]);
   const [periodPrediction, setPeriodPrediction] = useState<PeriodPrediction>({ nextDate: null, daysUntil: null });
+  const [periodError, setPeriodError] = useState<string | null>(null);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [showAddSleep, setShowAddSleep] = useState(false);
   const [showAddStudy, setShowAddStudy] = useState(false);
@@ -110,6 +111,7 @@ export default function HealthPage() {
   }, []);
 
   const loadPeriodPrediction = useCallback(async () => {
+    setPeriodError(null);
     try {
       const res = await fetch("/api/health/period");
       const records = await res.json();
@@ -120,7 +122,9 @@ export default function HealthPage() {
         const days = Math.max(0, Math.ceil((next.getTime() - Date.now()) / 86400000));
         setPeriodPrediction({ nextDate: next.toISOString().slice(0, 10), daysUntil: days });
       }
-    } catch {}
+    } catch {
+      setPeriodError("经期数据加载失败");
+    }
   }, []);
 
   useEffect(() => {
@@ -684,6 +688,11 @@ export default function HealthPage() {
 
       {activeTab === "period" && (
         <div className="flex flex-col gap-4">
+          {periodError && (
+            <div className="glass-card p-3 bg-red-500/10 text-xs text-red-500 fade-in">
+              {periodError}
+            </div>
+          )}
           <Link href="/health/period" className="glass-card p-5 flex items-center gap-4 fade-in stagger-2">
             <p className="text-4xl">🌸</p>
             <div className="flex-1">

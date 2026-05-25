@@ -276,6 +276,13 @@ export function initStaticAPI(): boolean {
         const e = staticDB.createEmotion(body as Record<string, unknown> as Partial<import("./static-db").StoredEmotion>);
         return jsonResponse(e);
       }
+      if (pathname.startsWith("/api/emotion/") && method === "PATCH") {
+        const id = extractIdFromPath(pathname, "/api/emotion");
+        if (!id) return jsonResponse({ error: "缺少id" }, 400);
+        const body = await getBody(init!);
+        const e = staticDB.updateEmotion(id, body as Partial<import("./static-db").StoredEmotion>);
+        return jsonResponse(e);
+      }
       if (pathname.startsWith("/api/emotion/") && method === "DELETE") {
         const id = extractIdFromPath(pathname, "/api/emotion");
         if (!id) return jsonResponse({ error: "缺少id" }, 400);
@@ -385,6 +392,12 @@ export function initStaticAPI(): boolean {
       if (pathname === "/api/ai/todo") {
         return handleAITodo(init);
       }
+      if (pathname === "/api/ai/goodnight") {
+        return handleAIGoodnight(init);
+      }
+      if (pathname === "/api/ai/weekly") {
+        return handleAIWeekly(init);
+      }
 
       // ─── DB Init ───
       if (pathname === "/api/db/init") {
@@ -454,6 +467,42 @@ async function handleAITodo(init?: RequestInit): Promise<Response> {
     const lines = text.split("\n").filter(Boolean).slice(0, 5);
     return jsonResponse({ tasks: lines.map((t: string) => ({ title: t.replace(/^[\d\.\-\s]+/, ""), description: "", priority: "normal" })) });
   }
+}
+
+async function handleAIGoodnight(init?: RequestInit): Promise<Response> {
+  const body = await getBody(init!);
+  const today = getTodayStr();
+  const todos = staticDB.getTodos();
+  const pendingCount = todos.filter(t => !t.isDone).length;
+  const doneCount = todos.filter(t => t.isDone).length;
+  const diaries = staticDB.getDiaries();
+  const todayDiary = diaries.find(d => d.createdAt?.slice(0, 10) === today);
+
+  const context = `今日完成事项: ${doneCount}个, 待完成: ${pendingCount}个.${todayDiary ? ` 今日日记: ${todayDiary.content?.slice(0, 200)}` : ""}`;
+  const reply = await callDeepSeek([
+    { role: "system", content: "你是一个温暖的AI伴侣小灵。用户结束了一天的学习生活，请根据TA的完成情况，生成一段100-150字的温暖晚安总结，包含鼓励、安慰和明天的小建议。语气温柔治愈，适当使用emoji。" },
+    { role: "user", content: context },
+  ]);
+  return jsonResponse({ reply });
+}
+
+async function handleAIWeekly(init?: RequestInit): Promise<Response> {
+  const body = await getBody(init!);
+  const today = getTodayStr();
+  const emotions = staticDB.getEmotions(7);
+  const diaries = staticDB.getDiaries().filter(d => {
+    const d7 = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    return d.createdAt?.slice(0, 10) >= d7;
+  });
+
+  const moodSummary = emotions.map(e => `${e.mood}(${e.score}分)`).join(", ") || "暂无记录";
+  const diaryTitles = diaries.map(d => d.title || "无标题").slice(0, 5).join("、") || "暂无记录";
+
+  const reply = await callDeepSeek([
+    { role: "system", content: "你是一个温暖的AI助手小灵。用户需要一份本周总结。请根据情绪数据和日记，生成一段150字左右的温暖周报，包含本周亮点、情绪分析和下周建议。语气温柔治愈，适当使用emoji。" },
+    { role: "user", content: `本周情绪: ${moodSummary}。日记关键词: ${diaryTitles}。` },
+  ]);
+  return jsonResponse({ reply });
 }
 
 let _initialized = false;

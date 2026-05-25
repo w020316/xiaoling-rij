@@ -42,6 +42,7 @@ export default function NewTodoPage() {
   const [repeatRule, setRepeatRule] = useState("");
   const [attachment, setAttachment] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function addTag(value: string) {
     const trimmed = value.trim();
@@ -88,7 +89,9 @@ export default function NewTodoPage() {
         }),
       });
       router.push("/todo");
-    } catch {} finally {
+    } catch {
+      setError("创建失败，请重试");
+    } finally {
       setLoading(false);
     }
   }
@@ -101,6 +104,15 @@ export default function NewTodoPage() {
         </Link>
         <h1 className="text-xl font-bold flex-1 text-center pr-8">新建待办</h1>
       </header>
+
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col gap-4">
         <div className="slide-up">

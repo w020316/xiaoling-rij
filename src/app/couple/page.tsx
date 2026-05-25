@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  Heart, Plus, CheckCircle2, Star, Link2, Trash2
+  Heart, Plus, CheckCircle2, Star, Link2, Trash2, X
 } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
 
@@ -47,6 +47,7 @@ export default function CouplePage() {
   const [newAnniversary, setNewAnniversary] = useState({ title: "", date: "", type: "custom" });
   const [newWish, setNewWish] = useState("");
   const [newSavings, setNewSavings] = useState({ title: "", target: 0 });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/couple").then((r) => r.json()).then(setCouple);
@@ -56,61 +57,81 @@ export default function CouplePage() {
 
   async function addAnniversary() {
     if (!newAnniversary.title || !newAnniversary.date) return;
-    await fetch("/api/anniversary", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newAnniversary),
-    });
-    setShowAddAnniversary(false);
-    setNewAnniversary({ title: "", date: "", type: "custom" });
-    const res = await fetch("/api/couple");
-    setCouple(await res.json());
+    try {
+      await fetch("/api/anniversary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newAnniversary),
+      });
+      setShowAddAnniversary(false);
+      setNewAnniversary({ title: "", date: "", type: "custom" });
+      const res = await fetch("/api/couple");
+      setCouple(await res.json());
+    } catch {
+      setError("添加纪念日失败");
+    }
   }
 
   async function addWish() {
     if (!newWish) return;
-    await fetch("/api/wishlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newWish }),
-    });
-    setShowAddWish(false);
-    setNewWish("");
-    const res = await fetch("/api/couple");
-    setCouple(await res.json());
+    try {
+      await fetch("/api/wishlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newWish }),
+      });
+      setShowAddWish(false);
+      setNewWish("");
+      const res = await fetch("/api/couple");
+      setCouple(await res.json());
+    } catch {
+      setError("添加愿望失败");
+    }
   }
 
   async function toggleWish(id: string, isCompleted: boolean) {
-    await fetch(`/api/wishlist/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isCompleted: !isCompleted }),
-    });
-    const res = await fetch("/api/couple");
-    setCouple(await res.json());
+    try {
+      await fetch(`/api/wishlist/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isCompleted: !isCompleted }),
+      });
+      const res = await fetch("/api/couple");
+      setCouple(await res.json());
+    } catch {
+      setError("操作失败");
+    }
   }
 
   async function addSavingsGoal() {
     if (!newSavings.title || !newSavings.target) return;
-    await fetch("/api/savings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newSavings),
-    });
-    setShowAddSavings(false);
-    setNewSavings({ title: "", target: 0 });
-    const res = await fetch("/api/couple");
-    setCouple(await res.json());
+    try {
+      await fetch("/api/savings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newSavings),
+      });
+      setShowAddSavings(false);
+      setNewSavings({ title: "", target: 0 });
+      const res = await fetch("/api/couple");
+      setCouple(await res.json());
+    } catch {
+      setError("创建存钱目标失败");
+    }
   }
 
   async function updateSavingsAmount(id: string, current: number) {
-    await fetch(`/api/savings/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ current }),
-    });
-    const res = await fetch("/api/couple");
-    setCouple(await res.json());
+    try {
+      await fetch(`/api/savings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current }),
+      });
+      const res = await fetch("/api/couple");
+      setCouple(await res.json());
+    } catch {
+      setError("更新金额失败");
+    }
   }
 
   const anniversaries = couple?.anniversaries || [];
@@ -123,6 +144,15 @@ export default function CouplePage() {
         <Heart size={22} className="text-primary" />
         <h1 className="text-xl font-bold lg:text-2xl">情侣空间</h1>
       </header>
+
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div className="flex gap-2 lg:gap-3 mb-5 overflow-x-auto pb-1">
         {[
@@ -241,9 +271,13 @@ export default function CouplePage() {
                     <button
                       onClick={async () => {
                         if (!confirm("确定删除此纪念日？")) return;
-                        await fetch(`/api/anniversary/${a.id}`, { method: "DELETE" });
-                        const res = await fetch("/api/couple");
-                        setCouple(await res.json());
+                        try {
+                          await fetch(`/api/anniversary/${a.id}`, { method: "DELETE" });
+                          const res = await fetch("/api/couple");
+                          setCouple(await res.json());
+                        } catch {
+                          setError("操作失败");
+                        }
                       }}
                       className="p-1 text-muted-foreground/40 hover:text-red-500 transition-colors"
                     >
@@ -287,9 +321,13 @@ export default function CouplePage() {
               <button
                 onClick={async () => {
                   if (!confirm("确定删除此愿望？")) return;
-                  await fetch(`/api/wishlist/${wish.id}`, { method: "DELETE" });
-                  const res = await fetch("/api/couple");
-                  setCouple(await res.json());
+                  try {
+                    await fetch(`/api/wishlist/${wish.id}`, { method: "DELETE" });
+                    const res = await fetch("/api/couple");
+                    setCouple(await res.json());
+                  } catch {
+                    setError("操作失败");
+                  }
                 }}
                 className="p-1 text-muted-foreground/40 hover:text-red-500 transition-colors"
               >
@@ -332,9 +370,13 @@ export default function CouplePage() {
                     <button
                       onClick={async () => {
                         if (!confirm("确定删除此存钱目标？")) return;
-                        await fetch(`/api/savings/${s.id}`, { method: "DELETE" });
-                        const res = await fetch("/api/couple");
-                        setCouple(await res.json());
+                        try {
+                          await fetch(`/api/savings/${s.id}`, { method: "DELETE" });
+                          const res = await fetch("/api/couple");
+                          setCouple(await res.json());
+                        } catch {
+                          setError("操作失败");
+                        }
                       }}
                       className="p-1 text-muted-foreground/40 hover:text-red-500 transition-colors"
                     >

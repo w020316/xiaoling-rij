@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BookHeart, Plus, Sparkles, CloudSun, Tag, Trash2 } from "lucide-react";
+import { BookHeart, Plus, Sparkles, CloudSun, Tag, Trash2, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 interface Diary {
@@ -20,16 +20,29 @@ export default function DiaryPage() {
   const [diaries, setDiaries] = useState<Diary[]>([]);
   const [filter, setFilter] = useState<"all" | "text" | "ai">("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/diary")
       .then((r) => r.json())
-      .then(setDiaries);
+      .then((data) => {
+        setDiaries(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("加载失败，请刷新重试");
+        setLoading(false);
+      });
   }, []);
 
   async function handleDelete(id: string) {
-    await fetch(`/api/diary/${id}`, { method: "DELETE" });
-    setDiaries((prev) => prev.filter((d) => d.id !== id));
+    try {
+      await fetch(`/api/diary/${id}`, { method: "DELETE" });
+      setDiaries((prev) => prev.filter((d) => d.id !== id));
+    } catch {
+      setError("删除失败，请重试");
+    }
     setDeleteId(null);
   }
 
@@ -53,6 +66,34 @@ export default function DiaryPage() {
         </Link>
       </header>
 
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {deleteId && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
+          <div className="glass-card p-6 mx-4 max-w-xs w-full text-center slide-up">
+            <p className="text-lg font-bold mb-2">确认删除</p>
+            <p className="text-sm text-muted-foreground mb-5">删除后无法恢复，确定要删除吗？</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteId(null)} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
+              <button onClick={() => deleteId && handleDelete(deleteId)} className="glass-button bg-red-500 text-white flex-1 py-2 text-sm">删除</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 size={24} className="animate-spin text-primary" />
+        </div>
+      )}
+
       <div className="flex gap-2 mb-5">
         {[
           { key: "all", label: "全部" },
@@ -75,7 +116,7 @@ export default function DiaryPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {filtered.map((diary) => (
-          <Link href={`/diary/${diary.id}`} key={diary.id} className="glass-card p-4 lg:p-5 relative group lg:hover:shadow-lg lg:hover:-translate-y-1 lg:transition-all lg:duration-300">
+          <Link href={`/diary/${diary.id}`} key={diary.id} className="glass-card p-4 lg:p-5 relative group card-shine hover-lift lg:transition-all lg:duration-300">
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-bold text-base">{diary.title || "无标题日记"}</h3>
               <div className="flex items-center gap-1.5">
