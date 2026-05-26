@@ -55,24 +55,21 @@ jobs:
           echo "=== Output structure ==="
           ls out/
           echo ""
-          echo "=== xiaoling-rij subdirectory ==="
-          ls out/xiaoling-rij/ 2>/dev/null || echo "NOT FOUND"
-          echo ""
-          echo "=== Key files in subdirectory ==="
-          ls out/xiaoling-rij/*.html 2>/dev/null | head -5
-          ls out/xiaoling-rij/_next/ 2>/dev/null | head -5
+          echo "=== Key files ==="
+          ls out/*.html 2>/dev/null | head -5
+          ls out/_next/ 2>/dev/null | head -5
           echo ""
           echo "=== Total files ==="
           find ./out -type f | wc -l
 
           touch out/.nojekyll
-          cp out/xiaoling-rij/index.html out/xiaoling-rij/404.html
+          cp out/index.html out/404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./out/xiaoling-rij
+          publish_dir: ./out
           publish_branch: gh-pages
           force_orphan: true
           commit_message: "deploy: v${{ github.sha }}"
