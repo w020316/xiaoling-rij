@@ -23,8 +23,16 @@ function extractIdFromPath(pathname: string, prefix: string): string | null {
   return match ? match[1] : null;
 }
 
-async function getBody(req: RequestInit): Promise<Record<string, unknown>> {
+async function getBody(req?: RequestInit): Promise<Record<string, unknown>> {
   try {
+    if (!req) return {};
+    if (typeof FormData !== "undefined" && req.body instanceof FormData) {
+      const formBody: Record<string, unknown> = {};
+      for (const [key, value] of req.body.entries()) {
+        formBody[key] = value;
+      }
+      return formBody;
+    }
     if (typeof req.body === "string") return JSON.parse(req.body);
     if (req.body instanceof ReadableStream) {
       const reader = req.body.getReader();
@@ -40,6 +48,16 @@ async function getBody(req: RequestInit): Promise<Record<string, unknown>> {
   } catch {
     return {};
   }
+}
+
+async function fileToDataUrl(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return `data:${file.type || "image/jpeg"};base64,${btoa(binary)}`;
 }
 
 function generateLocalId(): string {
@@ -158,7 +176,18 @@ export function initStaticAPI(): boolean {
       }
       if (pathname === "/api/photo" && method === "POST") {
         const body = await getBody(init!);
-        const photo = staticDB.createPhoto(body as Record<string, unknown> as Partial<import("./static-db").StoredPhoto>);
+        let url = typeof body.url === "string" ? body.url : "";
+        if (!url && typeof File !== "undefined" && body.file instanceof File) {
+          url = await fileToDataUrl(body.file);
+        }
+        if (!url) return jsonResponse({ error: "缺少图片数据" }, 400);
+        const photo = staticDB.createPhoto({
+          url,
+          description: typeof body.description === "string" ? body.description : null,
+          location: typeof body.location === "string" ? body.location : null,
+          photoTime: typeof body.photoTime === "string" ? body.photoTime : new Date().toISOString(),
+          category: typeof body.category === "string" ? body.category : "all",
+        } as Partial<import("./static-db").StoredPhoto>);
         return jsonResponse(photo);
       }
       if (pathname.startsWith("/api/photo/") && method === "PATCH") {
@@ -177,8 +206,19 @@ export function initStaticAPI(): boolean {
 
       // ─── Couple ───
       if (pathname === "/api/couple" && method === "GET") {
-        const couple = staticDB.getCouple();
-        return jsonResponse(couple || {});
+        let couple = staticDB.getCouple();
+        if (!couple) {
+          couple = staticDB.createCouple({
+            nickname1: "小林",
+            nickname2: "TA",
+          });
+        }
+        return jsonResponse({
+          ...couple,
+          anniversaries: staticDB.getAnniversaries(),
+          wishLists: staticDB.getWishLists(),
+          savingsGoals: staticDB.getSavingsGoals(),
+        });
       }
       if (pathname === "/api/couple" && method === "POST") {
         const body = await getBody(init!);
@@ -293,13 +333,27 @@ export function initStaticAPI(): boolean {
       // ─── CheckIn ───
       if (pathname === "/api/checkin" && method === "GET") {
         const today = staticDB.getTodayCheckIn();
-        return jsonResponse({ success: !!today, checkedIn: !!today });
+        return jsonResponse({
+          success: !!today,
+          checkedIn: !!today,
+          checkInDays: staticDB.getUser().checkInDays,
+        });
       }
       if (pathname === "/api/checkin" && method === "POST") {
         const already = staticDB.getTodayCheckIn();
-        if (already) return jsonResponse({ success: false, message: "今日已打卡" });
+        if (already) {
+          return jsonResponse({
+            success: false,
+            message: "今日已打卡",
+            checkInDays: staticDB.getUser().checkInDays,
+          });
+        }
         staticDB.createCheckIn();
-        return jsonResponse({ success: true, message: "打卡成功" });
+        return jsonResponse({
+          success: true,
+          message: "打卡成功",
+          checkInDays: staticDB.getUser().checkInDays,
+        });
       }
 
       // ─── Period ───
@@ -336,6 +390,12 @@ export function initStaticAPI(): boolean {
       }
       if (pathname === "/api/calorie" && method === "DELETE") {
         const id = getQueryParam(url, "id");
+        if (!id) return jsonResponse({ error: "缺少id" }, 400);
+        staticDB.deleteCalorie(id);
+        return jsonResponse({ success: true });
+      }
+      if (pathname.startsWith("/api/calorie/") && method === "DELETE") {
+        const id = extractIdFromPath(pathname, "/api/calorie");
         if (!id) return jsonResponse({ error: "缺少id" }, 400);
         staticDB.deleteCalorie(id);
         return jsonResponse({ success: true });
@@ -382,7 +442,7 @@ export function initStaticAPI(): boolean {
         return jsonResponse({ holiday: null });
       }
 
-      // ─── AI endpoints (direct DeepSeek calls from browser) ───
+      // ─── AI endpoints (static mode fallback) ───
       if (pathname === "/api/ai/chat") {
         return handleAIChat(init);
       }
@@ -413,19 +473,14 @@ export function initStaticAPI(): boolean {
 }
 
 async function callDeepSeek(messages: Array<{ role: string; content: string }>): Promise<string> {
-  const apiKey = "sk-28fe47f79b3846fa819bca13b199d983";
-  try {
-    const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: "deepseek-chat", messages, max_tokens: 1000, temperature: 0.8 }),
-    });
-    if (!res.ok) throw new Error(`DeepSeek error: ${res.status}`);
-    const data = await res.json() as { choices: Array<{ message: { content: string } }> };
-    return data.choices[0]?.message?.content || "抱歉，我暂时无法回答。";
-  } catch {
-    return "抱歉，AI 服务暂时不可用，请稍后再试。";
+  const lastMessage = messages[messages.length - 1]?.content || "";
+  if (lastMessage.includes("晚安")) {
+    return "今天也辛苦啦，记得把烦恼轻轻放下，明天会有新的好心情等着你。晚安，好梦呀。";
   }
+  if (lastMessage.includes("情绪") || lastMessage.includes("难过")) {
+    return "我有在认真听你说话。先让自己慢一点、轻一点，去喝口水，深呼吸一下，你已经很棒了。";
+  }
+  return "静态模式下 AI 会使用本地温柔回复陪伴你，完整智能能力请在支持服务端 API 的环境中使用。";
 }
 
 async function handleAIChat(init?: RequestInit): Promise<Response> {
@@ -434,11 +489,11 @@ async function handleAIChat(init?: RequestInit): Promise<Response> {
   if (!Array.isArray(messages)) return jsonResponse({ error: "messages 必须为数组" }, 400);
   staticDB.createMessage("user", messages[messages.length - 1]?.content || "");
   const reply = await callDeepSeek([
-    { role: "system", content: "你是一个温暖治愈的AI伴侣，名叫小灵。你可以帮助用户管理待办事项、记录日记、健康提醒等。回复语气温柔可爱，适当使用emoji。" },
+    { role: "system", content: "你是一个温暖治愈的AI伴侣，名叫小林。你可以帮助用户管理待办事项、记录日记、健康提醒等。回复语气温柔可爱，适当使用emoji。" },
     ...messages,
   ]);
   staticDB.createMessage("assistant", reply);
-  return jsonResponse({ reply });
+  return jsonResponse({ content: reply });
 }
 
 async function handleAIDiary(init?: RequestInit): Promise<Response> {
@@ -455,18 +510,13 @@ async function handleAIDiary(init?: RequestInit): Promise<Response> {
 async function handleAITodo(init?: RequestInit): Promise<Response> {
   const body = await getBody(init!);
   const goal = body.goal as string;
-  if (!goal) return jsonResponse({ tasks: [] });
-  const text = await callDeepSeek([
-    { role: "system", content: "你是一个任务分解助手。将用户的目标拆解为3-5个具体可执行的步骤。返回JSON数组格式：[{\"title\": \"任务名\", \"description\": \"描述\", \"priority\": \"high|normal|low\"}]，只返回JSON数组，不要其他内容。" },
-    { role: "user", content: goal },
-  ]);
-  try {
-    const tasks = JSON.parse(text);
-    return jsonResponse({ tasks: Array.isArray(tasks) ? tasks : [] });
-  } catch {
-    const lines = text.split("\n").filter(Boolean).slice(0, 5);
-    return jsonResponse({ tasks: lines.map((t: string) => ({ title: t.replace(/^[\d\.\-\s]+/, ""), description: "", priority: "normal" })) });
-  }
+  if (!goal) return jsonResponse([]);
+  const tasks = [
+    { title: `明确目标：${goal}`, description: "先把目标拆成可执行的小步骤。", priority: "important" },
+    { title: "安排时间块", description: "给每一步分配可执行时间。", priority: "normal" },
+    { title: "开始第一步", description: "先完成最容易启动的一项任务。", priority: "normal" },
+  ];
+  return jsonResponse(tasks);
 }
 
 async function handleAIGoodnight(init?: RequestInit): Promise<Response> {

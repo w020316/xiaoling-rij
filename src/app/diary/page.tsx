@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BookHeart, Plus, Sparkles, CloudSun, Tag, Trash2, X, Loader2 } from "lucide-react";
+import { BookHeart, Plus, Sparkles, CloudSun, Tag, Trash2, X, Loader2, Search } from "lucide-react";
 import Link from "next/link";
 
 interface Diary {
@@ -22,6 +22,7 @@ export default function DiaryPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetch("/api/diary")
@@ -51,6 +52,19 @@ export default function DiaryPage() {
     if (filter === "ai") return d.aiExpanded;
     return !d.aiExpanded;
   });
+
+  const searched = searchQuery.trim()
+    ? filtered.filter((d) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          (d.title || "").toLowerCase().includes(q) ||
+          d.content.toLowerCase().includes(q) ||
+          (d.mood || "").toLowerCase().includes(q) ||
+          (d.weather || "").toLowerCase().includes(q) ||
+          (d.tags || "").toLowerCase().includes(q)
+        );
+      })
+    : filtered;
 
   return (
     <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8">
@@ -114,8 +128,26 @@ export default function DiaryPage() {
         ))}
       </div>
 
+      <div className="flex gap-2 mb-5">
+        <div className="flex-1 relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索日记标题、内容、心情..."
+            className="glass-input px-4 py-2 pl-8 text-sm w-full"
+          />
+        </div>
+        {searchQuery && (
+          <button onClick={() => setSearchQuery("")} className="p-2 text-muted-foreground hover:text-primary transition-colors">
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {filtered.map((diary) => (
+        {searched.map((diary) => (
           <Link href={`/diary/${diary.id}`} key={diary.id} className="glass-card p-4 lg:p-5 relative group card-shine hover-lift lg:transition-all lg:duration-300">
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-bold text-base">{diary.title || "无标题日记"}</h3>
@@ -171,7 +203,7 @@ export default function DiaryPage() {
           </div>
         </Link>
 
-        {filtered.length === 0 && (
+        {searched.length === 0 && (
           <div className="text-center py-12">
             <p className="text-4xl mb-3">📝</p>
             <p className="text-sm text-muted-foreground">还没有日记哦</p>

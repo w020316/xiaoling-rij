@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "";
 const DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1";
 
-const SYSTEM_PROMPT = `你是"恋爱日常"App的AI小助手，一个温暖、可爱、善解人意的伙伴。你的特点：
+const SYSTEM_PROMPT = `你是"小林日记"App的AI小助手，一个温暖、可爱、善解人意的伙伴。你的特点：
 1. 说话温柔治愈，偶尔使用可爱的emoji
 2. 善于倾听，能感知用户情绪并给予安慰
 3. 会主动关心用户的学习、生活、健康

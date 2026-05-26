@@ -37,6 +37,7 @@ export default function CaloriePage() {
   const [records, setRecords] = useState<CalorieRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const meals = [
     { key: "breakfast", label: "早餐" },
@@ -95,6 +96,11 @@ export default function CaloriePage() {
     } catch {
       setError("删除失败，请重试");
     }
+    setDeleteId(null);
+  }
+
+  async function handleConfirmDelete() {
+    if (deleteId) deleteRecord(deleteId);
   }
 
   const mealLabel = (key: string) => meals.find((m) => m.key === key)?.label || key;
@@ -194,7 +200,7 @@ export default function CaloriePage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-primary">{record.calories}kcal</span>
-              <button onClick={() => deleteRecord(record.id)} className="text-muted-foreground hover:text-red-500">
+              <button onClick={() => setDeleteId(record.id)} className="text-muted-foreground hover:text-red-500">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -204,6 +210,19 @@ export default function CaloriePage() {
           <p className="text-center text-sm text-muted-foreground py-8">搜索食物添加到今日记录</p>
         )}
       </div>
+
+      {deleteId && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
+          <div className="glass-card p-6 mx-4 max-w-xs w-full text-center slide-up">
+            <p className="text-lg font-bold mb-2">确认删除</p>
+            <p className="text-sm text-muted-foreground mb-5">删除后无法恢复，确定要删除吗？</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteId(null)} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
+              <button onClick={handleConfirmDelete} className="glass-button bg-red-500 text-white flex-1 py-2 text-sm">删除</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

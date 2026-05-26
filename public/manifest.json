@@ -1,7 +1,7 @@
 {
-  "name": "恋爱日常 | Love Daily AI",
-  "short_name": "恋爱日常",
-  "description": "治愈系 AI 日常管理应用 - 管理学习与生活，记录情绪和成长",
+  "name": "小林日记 | XiaoLin Diary",
+  "short_name": "小林日记",
+  "description": "治愈系日常记录应用，支持待办、日记、相册、情侣空间与健康管理",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1028",
@@ -9,14 +9,9 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }

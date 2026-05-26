@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   ArrowLeft, User, Bell, Database, Info,
-  Download, Trash2, ExternalLink, Save
+  Download, Trash2, ExternalLink, Save, X
 } from "lucide-react";
 import Link from "next/link";
 
@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [savedNickname, setSavedNickname] = useState("");
   const [notifyState, setNotifyState] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     const savedAvatar = localStorage.getItem("user-avatar") || "🐱";
@@ -80,12 +81,12 @@ export default function SettingsPage() {
   }
 
   function clearCache() {
-    if (!confirm("确定要清除所有本地缓存吗？此操作不可恢复。")) return;
     localStorage.clear();
     setAvatar("🐱");
     setNotifyState(
       Object.fromEntries(NOTIFY_KEYS.map(({ key }) => [key, false]))
     );
+    setShowClearConfirm(false);
   }
 
   return (
@@ -183,7 +184,7 @@ export default function SettingsPage() {
               <Download size={16} /> 导出数据
             </button>
             <button
-              onClick={clearCache}
+              onClick={() => setShowClearConfirm(true)}
               className="py-2.5 text-sm flex items-center justify-center gap-2 rounded-xl border border-red-300 text-red-500 bg-red-50/50 dark:bg-red-900/10 dark:border-red-900/30 transition-all active:scale-95"
             >
               <Trash2 size={16} /> 清除缓存
@@ -218,6 +219,19 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
+
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
+          <div className="glass-card p-6 mx-4 max-w-xs w-full text-center slide-up">
+            <p className="text-lg font-bold mb-2">确认清除</p>
+            <p className="text-sm text-muted-foreground mb-5">确定要清除所有本地缓存吗？此操作不可恢复。</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowClearConfirm(false)} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
+              <button onClick={clearCache} className="glass-button bg-red-500 text-white flex-1 py-2 text-sm">清除</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

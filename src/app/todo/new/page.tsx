@@ -73,7 +73,7 @@ export default function NewTodoPage() {
     if (!title.trim() || loading) return;
     setLoading(true);
     try {
-      await fetch("/api/todo", {
+      const response = await fetch("/api/todo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -88,9 +88,13 @@ export default function NewTodoPage() {
           attachments: attachment || null,
         }),
       });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "创建失败");
+      }
       router.push("/todo");
-    } catch {
-      setError("创建失败，请重试");
+    } catch (err: any) {
+      setError(err.message || "创建失败，请重试");
     } finally {
       setLoading(false);
     }

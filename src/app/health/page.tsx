@@ -87,6 +87,7 @@ export default function HealthPage() {
   const [newExercise, setNewExercise] = useState({ type: "跑步", duration: 30, calories: 100 });
   const [newSleep, setNewSleep] = useState({ bedtime: "23:00", wakeTime: "07:00", quality: "好" });
   const [newStudy, setNewStudy] = useState({ subject: "编程", duration: 60 });
+  const [deleteTarget, setDeleteTarget] = useState<{type: 'exercise'|'sleep'|'study', id: string} | null>(null);
 
   const loadWater = useCallback(() => {
     const key = `water-cups-${getTodayKey()}`;
@@ -201,6 +202,14 @@ export default function HealthPage() {
     const updated = studyRecords.filter((r) => r.id !== id);
     setStudyRecords(updated);
     localStorage.setItem("study-records", JSON.stringify(updated));
+  }
+
+  function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === 'exercise') deleteExercise(deleteTarget.id);
+    else if (deleteTarget.type === 'sleep') deleteSleep(deleteTarget.id);
+    else if (deleteTarget.type === 'study') deleteStudy(deleteTarget.id);
+    setDeleteTarget(null);
   }
 
   const todayExercises = exerciseRecords.filter((r) => r.date === getTodayKey());
@@ -392,7 +401,7 @@ export default function HealthPage() {
                     <div className="flex items-center gap-3">
                       <span className="text-muted-foreground">{r.duration} 分钟</span>
                       <span className="text-orange-500 text-xs">{r.calories} kcal</span>
-                      <button onClick={() => deleteExercise(r.id)} className="text-muted-foreground hover:text-red-500 text-xs">✕</button>
+                      <button onClick={() => setDeleteTarget({type: 'exercise', id: r.id})} className="text-muted-foreground hover:text-red-500 text-xs">✕</button>
                     </div>
                   </div>
                 ))}
@@ -560,7 +569,7 @@ export default function HealthPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-primary font-medium">{calcSleepDuration(r.bedtime, r.wakeTime)}h</span>
                       <span>{SLEEP_QUALITY_OPTIONS.find((q) => q.value === r.quality)?.emoji}</span>
-                      <button onClick={() => deleteSleep(r.id)} className="text-muted-foreground hover:text-red-500 text-xs">✕</button>
+                      <button onClick={() => setDeleteTarget({type: 'sleep', id: r.id})} className="text-muted-foreground hover:text-red-500 text-xs">✕</button>
                     </div>
                   </div>
                 ))}
@@ -649,7 +658,7 @@ export default function HealthPage() {
                     <span>{STUDY_EMOJIS[r.subject] || "✏️"} {r.subject}</span>
                     <div className="flex items-center gap-3">
                       <span className="text-muted-foreground">{r.duration} 分钟</span>
-                      <button onClick={() => deleteStudy(r.id)} className="text-muted-foreground hover:text-red-500 text-xs">✕</button>
+                      <button onClick={() => setDeleteTarget({type: 'study', id: r.id})} className="text-muted-foreground hover:text-red-500 text-xs">✕</button>
                     </div>
                   </div>
                 ))}
@@ -731,6 +740,19 @@ export default function HealthPage() {
               <p>🏃 运动：适度散步，避免剧烈运动</p>
               <p>😌 情绪：保持心情舒畅，适当休息</p>
               <p>🧴 护理：注意保暖，避免生冷食物</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
+          <div className="glass-card p-6 mx-4 max-w-xs w-full text-center slide-up">
+            <p className="text-lg font-bold mb-2">确认删除</p>
+            <p className="text-sm text-muted-foreground mb-5">删除后无法恢复，确定要删除吗？</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteTarget(null)} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
+              <button onClick={handleConfirmDelete} className="glass-button bg-red-500 text-white flex-1 py-2 text-sm">删除</button>
             </div>
           </div>
         </div>

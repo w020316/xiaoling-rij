@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  BookOpen, Plus, Trash2, MapPin, Clock, ChevronUp
+  BookOpen, Plus, Trash2, MapPin, Clock, ChevronUp, X, Loader2
 } from "lucide-react";
 
 const DAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
@@ -36,6 +36,9 @@ export default function SchedulePage() {
   const [activeDay, setActiveDay] = useState(today);
   const [courses, setCourses] = useState<Course[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "",
     dayOfWeek: DAY_MAP[today],
@@ -45,9 +48,17 @@ export default function SchedulePage() {
   });
 
   const fetchCourses = useCallback(async () => {
-    const res = await fetch("/api/schedule");
-    const data: Course[] = await res.json();
-    setCourses(data);
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch("/api/schedule");
+      const data: Course[] = await res.json();
+      setCourses(data);
+    } catch {
+      setError("加载课程失败，请重试");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -60,19 +71,29 @@ export default function SchedulePage() {
 
   async function addCourse() {
     if (!form.title || !form.timeStart || !form.timeEnd) return;
-    await fetch("/api/schedule", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setForm({ title: "", dayOfWeek: DAY_MAP[activeDay], timeStart: "", timeEnd: "", classroom: "" });
-    setShowForm(false);
-    fetchCourses();
+    try {
+      await fetch("/api/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      setForm({ title: "", dayOfWeek: DAY_MAP[activeDay], timeStart: "", timeEnd: "", classroom: "" });
+      setShowForm(false);
+      await fetchCourses();
+    } catch {
+      setError("添加课程失败");
+    }
   }
 
-  async function deleteCourse(id: string) {
-    await fetch(`/api/schedule/${id}`, { method: "DELETE" });
-    fetchCourses();
+  async function handleDeleteConfirm() {
+    if (!deleteId) return;
+    try {
+      await fetch(`/api/schedule/${deleteId}`, { method: "DELETE" });
+      await fetchCourses();
+    } catch {
+      setError("删除课程失败");
+    }
+    setDeleteId(null);
   }
 
   return (
@@ -81,6 +102,22 @@ export default function SchedulePage() {
         <BookOpen size={22} className="text-primary" />
         <h1 className="text-xl font-bold lg:text-2xl">课程表</h1>
       </header>
+
+      {error && (
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+          <span className="text-xs text-red-500">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {loading && (
+        <div className="glass-card p-8 flex items-center justify-center gap-3 fade-in">
+          <Loader2 size={20} className="animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">加载中...</span>
+        </div>
+      )}
 
       <div className="flex gap-2 mb-5 overflow-x-auto pb-1 lg:hidden">
         {DAYS.map((day) => (
@@ -123,7 +160,7 @@ export default function SchedulePage() {
                       </p>
                     )}
                     <button
-                      onClick={() => deleteCourse(course.id)}
+                      onClick={() => setDeleteId(course.id)}
                       className="text-muted-foreground/40 hover:text-red-500 text-[10px] mt-1 transition-colors"
                     >
                       删除
@@ -163,7 +200,7 @@ export default function SchedulePage() {
               </div>
             </div>
             <button
-              onClick={() => deleteCourse(course.id)}
+              onClick={() => setDeleteId(course.id)}
               className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50/50 transition-colors shrink-0"
             >
               <Trash2 size={16} />
@@ -231,6 +268,19 @@ export default function SchedulePage() {
           <div className="flex gap-2">
             <button onClick={addCourse} className="glass-button flex-1 py-2 text-xs">添加</button>
             <button onClick={() => setShowForm(false)} className="glass-button-outline flex-1 py-2 text-xs">取消</button>
+          </div>
+        </div>
+      )}
+
+      {deleteId && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
+          <div className="glass-card p-6 mx-4 max-w-xs w-full text-center slide-up">
+            <p className="text-lg font-bold mb-2">确认删除</p>
+            <p className="text-sm text-muted-foreground mb-5">删除后无法恢复，确定要删除吗？</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteId(null)} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
+              <button onClick={handleDeleteConfirm} className="glass-button bg-red-500 text-white flex-1 py-2 text-sm">删除</button>
+            </div>
           </div>
         </div>
       )}

@@ -218,7 +218,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="mt-6 text-center fade-in">
-        <p className="text-xs text-muted-foreground">恋爱日常 v2.3.0</p>
+        <p className="text-xs text-muted-foreground">小林日记 v2.3.0</p>
         <p className="text-xs text-muted-foreground mt-1">Made with 💕</p>
       </div>
     </main>

@@ -48,6 +48,7 @@ export default function CouplePage() {
   const [newWish, setNewWish] = useState("");
   const [newSavings, setNewSavings] = useState({ title: "", target: 0 });
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{type: 'anniversary'|'wish'|'savings', id: string} | null>(null);
 
   useEffect(() => {
     fetch("/api/couple").then((r) => r.json()).then(setCouple);
@@ -132,6 +133,19 @@ export default function CouplePage() {
     } catch {
       setError("更新金额失败");
     }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteConfirm) return;
+    try {
+      const apiMap = { anniversary: "/api/anniversary", wish: "/api/wishlist", savings: "/api/savings" };
+      await fetch(`${apiMap[deleteConfirm.type]}/${deleteConfirm.id}`, { method: "DELETE" });
+      const res = await fetch("/api/couple");
+      setCouple(await res.json());
+    } catch {
+      setError("删除失败");
+    }
+    setDeleteConfirm(null);
   }
 
   const anniversaries = couple?.anniversaries || [];
@@ -269,16 +283,7 @@ export default function CouplePage() {
                       )}
                     </div>
                     <button
-                      onClick={async () => {
-                        if (!confirm("确定删除此纪念日？")) return;
-                        try {
-                          await fetch(`/api/anniversary/${a.id}`, { method: "DELETE" });
-                          const res = await fetch("/api/couple");
-                          setCouple(await res.json());
-                        } catch {
-                          setError("操作失败");
-                        }
-                      }}
+                      onClick={() => setDeleteConfirm({type: 'anniversary', id: a.id})}
                       className="p-1 text-muted-foreground/40 hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={14} />
@@ -319,16 +324,7 @@ export default function CouplePage() {
               <span className={`flex-1 text-sm ${wish.isCompleted ? "line-through" : ""}`}>{wish.title}</span>
               {wish.isCompleted && <span className="text-xs text-primary">✅</span>}
               <button
-                onClick={async () => {
-                  if (!confirm("确定删除此愿望？")) return;
-                  try {
-                    await fetch(`/api/wishlist/${wish.id}`, { method: "DELETE" });
-                    const res = await fetch("/api/couple");
-                    setCouple(await res.json());
-                  } catch {
-                    setError("操作失败");
-                  }
-                }}
+                onClick={() => setDeleteConfirm({type: 'wish', id: wish.id})}
                 className="p-1 text-muted-foreground/40 hover:text-red-500 transition-colors"
               >
                 <Trash2 size={14} />
@@ -368,16 +364,7 @@ export default function CouplePage() {
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-primary font-bold">{percent}%</span>
                     <button
-                      onClick={async () => {
-                        if (!confirm("确定删除此存钱目标？")) return;
-                        try {
-                          await fetch(`/api/savings/${s.id}`, { method: "DELETE" });
-                          const res = await fetch("/api/couple");
-                          setCouple(await res.json());
-                        } catch {
-                          setError("操作失败");
-                        }
-                      }}
+                      onClick={() => setDeleteConfirm({type: 'savings', id: s.id})}
                       className="p-1 text-muted-foreground/40 hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={14} />
@@ -407,6 +394,19 @@ export default function CouplePage() {
           {savingsGoals.length === 0 && !showAddSavings && (
             <p className="text-center text-sm text-muted-foreground py-8">还没有存钱目标，添加一个吧 🐷</p>
           )}
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
+          <div className="glass-card p-6 mx-4 max-w-xs w-full text-center slide-up">
+            <p className="text-lg font-bold mb-2">确认删除</p>
+            <p className="text-sm text-muted-foreground mb-5">删除后无法恢复，确定要删除吗？</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirm(null)} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
+              <button onClick={handleDeleteConfirm} className="glass-button bg-red-500 text-white flex-1 py-2 text-sm">删除</button>
+            </div>
+          </div>
         </div>
       )}
     </main>

@@ -17,28 +17,28 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "恋爱日常 | Love Daily AI",
-    template: "%s | 恋爱日常",
+    default: "小林日记 | XiaoLin Diary",
+    template: "%s | 小林日记",
   },
-  description: "治愈系 AI 日常管理应用 - 管理学习与生活，记录情绪和成长，AI 驱动的智能伴侣体验",
-  keywords: ["恋爱", "日常管理", "AI助手", "日记", "待办", "情侣", "健康管理"],
+  description: "小林日记是一款治愈系日常记录应用，支持待办、日记、相册、情侣空间、健康管理与 AI 陪伴。",
+  keywords: ["小林日记", "日常管理", "AI助手", "日记", "待办", "情侣", "健康管理"],
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "恋爱日常",
+    title: "小林日记",
   },
   openGraph: {
-    title: "恋爱日常 | Love Daily AI",
-    description: "治愈系 AI 日常管理应用 - 记录每一天的甜蜜与成长",
+    title: "小林日记 | XiaoLin Diary",
+    description: "治愈系日常记录应用，记录每一天的甜蜜、成长与生活片段。",
     type: "website",
     locale: "zh_CN",
-    siteName: "恋爱日常",
+    siteName: "小林日记",
   },
   twitter: {
     card: "summary_large_image",
-    title: "恋爱日常 | Love Daily AI",
-    description: "治愈系 AI 日常管理应用",
+    title: "小林日记 | XiaoLin Diary",
+    description: "治愈系日常记录应用",
   },
 };
 

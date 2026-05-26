@@ -28,9 +28,9 @@ export function ResponsiveLayout({ children }: {
       <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:flex-col lg:border-r lg:border-border glass z-40">
         <div className="p-6">
           <h1 className="text-xl font-bold flex items-center gap-2">
-            <span className="gradient-text">💕 恋爱日常</span>
+            <span className="gradient-text">💕 小林日记</span>
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">Love Daily AI</p>
+          <p className="text-xs text-muted-foreground mt-1">XiaoLin Diary</p>
         </div>
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => {

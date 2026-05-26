@@ -116,7 +116,7 @@ export default function NewDiaryPage() {
   async function handleSave() {
     const finalContent = viewMode === "ai" && aiContent ? aiContent : content;
     try {
-      await fetch("/api/diary", {
+      const response = await fetch("/api/diary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -132,9 +132,13 @@ export default function NewDiaryPage() {
           aiContent: aiContent || null,
         }),
       });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "保存失败");
+      }
       router.push("/diary");
-    } catch {
-      setError("保存失败，请重试");
+    } catch (err: any) {
+      setError(err.message || "保存失败，请重试");
     }
   }
 

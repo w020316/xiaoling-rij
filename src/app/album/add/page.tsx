@@ -20,7 +20,7 @@ export default function AddPhotoPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [photoTime, setPhotoTime] = useState("");
+  const [photoTime, setPhotoTime] = useState(() => new Date().toISOString().slice(0, 16));
   const [category, setCategory] = useState("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +46,16 @@ export default function AddPhotoPage() {
       formData.append("photoTime", photoTime);
       formData.append("category", category);
 
-      await fetch("/api/photo", {
+      const response = await fetch("/api/photo", {
         method: "POST",
         body: formData,
       });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "上传失败");
+      }
       router.push("/album");
-    } catch { setError("上传失败，请重试"); } finally {
+    } catch (err: any) { setError(err.message || "上传失败，请重试"); } finally {
       setLoading(false);
     }
   }

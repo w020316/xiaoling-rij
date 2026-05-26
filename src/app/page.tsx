@@ -96,8 +96,9 @@ export default function Home() {
       fetch("/api/schedule").then((r) => r.json()),
       fetch("/api/user").then((r) => r.json()),
       fetch("/api/quote").then((r) => r.json()),
+      fetch("/api/checkin").then((r) => r.json()),
     ]).then(async (results) => {
-      const [statsRes, coupleRes, emotionRes, weatherRes, scheduleRes, userRes, quoteRes] = results;
+      const [statsRes, coupleRes, emotionRes, weatherRes, scheduleRes, userRes, quoteRes, checkinRes] = results;
       if (statsRes.status === "fulfilled") setStats(statsRes.value);
       if (coupleRes.status === "fulfilled") setCouple(coupleRes.value);
       if (emotionRes.status === "fulfilled" && emotionRes.value) setTodayMood(emotionRes.value.mood);
@@ -114,6 +115,7 @@ export default function Home() {
       }
       if (userRes.status === "fulfilled" && userRes.value?.nickname) setNickname(userRes.value.nickname);
       if (quoteRes.status === "fulfilled" && quoteRes.value?.content) setQuote(quoteRes.value.content);
+      if (checkinRes.status === "fulfilled") setCheckedIn(!!checkinRes.value?.checkedIn);
       try {
         const lastYear = new Date();
         lastYear.setFullYear(lastYear.getFullYear() - 1);
@@ -274,7 +276,7 @@ export default function Home() {
 
         <div className="glass-card p-4 text-center fade-in">
           <p className="text-sm italic text-muted-foreground leading-relaxed">
-            &ldquo; {quote} &rdquo;
+            &ldquo; {quote || "心存温柔，山河浪漫。"} &rdquo;
           </p>
         </div>
 
@@ -453,7 +455,7 @@ export default function Home() {
         <div className="glass-card p-5 flex flex-col justify-between fade-in">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">每日一言</p>
-            <p className="text-sm italic text-foreground leading-relaxed">&ldquo; {quote} &rdquo;</p>
+            <p className="text-sm italic text-foreground leading-relaxed">&ldquo; {quote || "心存温柔，山河浪漫。"} &rdquo;</p>
           </div>
           <div className="mt-3 pt-3 border-t border-border">
             <p className="text-[10px] text-muted-foreground">v2.3.0 · Made with 💕</p>
