@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Heart, Plus, CheckCircle2, Star, Link2, Trash2, X, RefreshCw
+  Heart, Plus, CheckCircle2, Star, Link2, Trash2, X, RefreshCw, Pencil
 } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
 
@@ -50,6 +50,8 @@ export default function CouplePage() {
   const [newSavings, setNewSavings] = useState({ title: "", target: 0 });
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{type: 'anniversary'|'wish'|'savings', id: string} | null>(null);
+  const [editingStartDate, setEditingStartDate] = useState(false);
+  const [newStartDate, setNewStartDate] = useState("");
 
   useEffect(() => {
     fetch("/api/couple").then((r) => r.json()).then(setCouple);
@@ -149,6 +151,23 @@ export default function CouplePage() {
     setDeleteConfirm(null);
   }
 
+  async function saveStartDate() {
+    if (!newStartDate) return;
+    try {
+      await fetch("/api/couple", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startDate: newStartDate }),
+      });
+      setEditingStartDate(false);
+      setNewStartDate("");
+      const res = await fetch("/api/couple");
+      setCouple(await res.json());
+    } catch {
+      setError("更新日期失败");
+    }
+  }
+
   const anniversaries = couple?.anniversaries || [];
   const wishLists = couple?.wishLists || [];
   const savingsGoals = couple?.savingsGoals || [];
@@ -196,10 +215,30 @@ export default function CouplePage() {
             <p className="text-sm text-muted-foreground mb-2 lg:text-base">在一起</p>
             <h2 className="text-5xl font-bold text-primary mb-2 lg:text-7xl">{coupleDays}</h2>
             <p className="text-sm text-muted-foreground lg:text-base">天</p>
-            {couple && (
-              <p className="text-xs text-muted-foreground mt-3">
-                {format(new Date(couple.startDate), "yyyy年MM月dd日")} - {format(new Date(), "yyyy年MM月dd日")}
-              </p>
+            {couple && !editingStartDate && (
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <p className="text-xs text-muted-foreground">
+                  {format(new Date(couple.startDate), "yyyy年MM月dd日")} - {format(new Date(), "yyyy年MM月dd日")}
+                </p>
+                <button
+                  onClick={() => { setEditingStartDate(true); setNewStartDate(couple.startDate.split("T")[0]); }}
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Pencil size={12} />
+                </button>
+              </div>
+            )}
+            {couple && editingStartDate && (
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <input
+                  type="date"
+                  value={newStartDate}
+                  onChange={(e) => setNewStartDate(e.target.value)}
+                  className="glass-input px-2 py-1 text-xs"
+                />
+                <button onClick={saveStartDate} className="glass-button px-2 py-1 text-xs">保存</button>
+                <button onClick={() => setEditingStartDate(false)} className="glass-button px-2 py-1 text-xs">取消</button>
+              </div>
             )}
           </div>
 

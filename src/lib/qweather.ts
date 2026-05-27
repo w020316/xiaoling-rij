@@ -100,6 +100,9 @@ export async function get7DayWeather(locationId: string): Promise<QWeatherDaily[
 }
 
 function getKeyParam(): string {
+  if (typeof process !== "undefined" && process.env.QWEATHER_KEY) {
+    return process.env.QWEATHER_KEY;
+  }
   return "";
 }
 

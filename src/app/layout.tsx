@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { BottomNav } from "@/components/BottomNav";
 import { ResponsiveLayout } from "@/components/ResponsiveLayout";
 import { StaticInit } from "@/components/StaticInit";
+import MusicPlayer from "@/components/MusicPlayer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -60,6 +61,7 @@ export default function RootLayout({
           <ResponsiveLayout>
             {children}
           </ResponsiveLayout>
+          <MusicPlayer />
           <BottomNav />
         </ThemeProvider>
       </body>
