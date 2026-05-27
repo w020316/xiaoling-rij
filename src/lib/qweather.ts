@@ -1,4 +1,25 @@
-const QWEATHER_BASE = "https://kp3h2rh7ab.re.qweatherapi.com";
+const QWEATHER_HOST =
+  process.env.QWEATHER_HOST || process.env.NEXT_PUBLIC_QWEATHER_HOST || "devapi.qweather.com";
+
+function getApiKey(): string {
+  return process.env.QWEATHER_KEY || process.env.NEXT_PUBLIC_QWEATHER_KEY || "";
+}
+
+function buildUrl(path: string, params: Record<string, string>): string {
+  const search = new URLSearchParams(params).toString();
+  return `https://${QWEATHER_HOST}${path}?${search}`;
+}
+
+async function qweatherFetch(path: string, params: Record<string, string>) {
+  const apiKey = getApiKey();
+  const headers: Record<string, string> = {};
+  if (apiKey) {
+    headers["X-QW-Api-Key"] = apiKey;
+  }
+  const url = buildUrl(path, params);
+  const res = await fetch(url, { headers });
+  return res.json();
+}
 
 export interface QWeatherNow {
   temp: string;
@@ -37,73 +58,77 @@ export interface QWeatherCity {
 }
 
 export async function searchCity(keyword: string): Promise<QWeatherCity[]> {
-  const res = await fetch(
-    `${QWEATHER_BASE}/city/lookup?location=${encodeURIComponent(keyword)}&key=${getKeyParam()}`
-  );
-  const data = await res.json();
-  if (data.code === "200") {
-    return (data.location || []).slice(0, 10).map((loc: any) => ({
-      id: loc.id,
-      name: loc.name,
-      lat: loc.lat,
-      lon: loc.lon,
-      adm1: loc.adm1,
-      adm2: loc.adm2,
-    }));
+  try {
+    const data = await qweatherFetch("/v2/city/lookup", {
+      location: keyword,
+      range: "cn",
+      number: "10",
+    });
+    if (data.code === "200" && data.location) {
+      return (data.location || []).map((loc: any) => ({
+        id: loc.id,
+        name: loc.name,
+        lat: loc.lat,
+        lon: loc.lon,
+        adm1: loc.adm1,
+        adm2: loc.adm2,
+      }));
+    }
+    return [];
+  } catch {
+    return [];
   }
-  return [];
 }
 
 export async function getNowWeather(locationId: string): Promise<QWeatherNow | null> {
-  const res = await fetch(
-    `${QWEATHER_BASE}/weather/now?location=${locationId}&key=${getKeyParam()}`
-  );
-  const data = await res.json();
-  if (data.code === "200" && data.now) {
-    return {
-      temp: data.now.temp,
-      feelsLike: data.now.feelsLike,
-      icon: data.now.icon,
-      text: data.now.text,
-      windDir: data.now.windDir,
-      windScale: data.now.windScale,
-      humidity: data.now.humidity,
-      precip: data.now.precip,
-      vis: data.now.vis,
-      pressure: data.now.pressure,
-      cloud: data.now.cloud,
-    };
+  try {
+    const data = await qweatherFetch("/v7/weather/now", {
+      location: locationId,
+    });
+    if (data.code === "200" && data.now) {
+      return {
+        temp: data.now.temp,
+        feelsLike: data.now.feelsLike,
+        icon: data.now.icon,
+        text: data.now.text,
+        windDir: data.now.windDir,
+        windScale: data.now.windScale,
+        humidity: data.now.humidity,
+        precip: data.now.precip,
+        vis: data.now.vis,
+        pressure: data.now.pressure,
+        cloud: data.now.cloud,
+      };
+    }
+    return null;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 export async function get7DayWeather(locationId: string): Promise<QWeatherDaily[]> {
-  const res = await fetch(
-    `${QWEATHER_BASE}/weather/7d?location=${locationId}&key=${getKeyParam()}`
-  );
-  const data = await res.json();
-  if (data.code === "200" && data.daily) {
-    return data.daily.map((d: any) => ({
-      fxDate: d.fxDate,
-      tempMax: d.tempMax,
-      tempMin: d.tempMin,
-      textDay: d.textDay,
-      iconDay: d.iconDay,
-      sunrise: d.sunrise,
-      sunset: d.sunset,
-      humidity: d.humidity,
-      windDirDay: d.windDirDay,
-      windScaleDay: d.windScaleDay,
-    }));
+  try {
+    const data = await qweatherFetch("/v7/weather/7d", {
+      location: locationId,
+    });
+    if (data.code === "200" && data.daily) {
+      return data.daily.map((d: any) => ({
+        fxDate: d.fxDate,
+        tempMax: d.tempMax,
+        tempMin: d.tempMin,
+        textDay: d.textDay,
+        iconDay: d.iconDay,
+        sunrise: d.sunrise,
+        sunset: d.sunset,
+        humidity: d.humidity,
+        windDirDay: d.windDirDay,
+        windScaleDay: d.windScaleDay,
+      }));
+    }
+    return [];
+  } catch {
+    return [];
   }
-  return [];
-}
-
-function getKeyParam(): string {
-  if (typeof process !== "undefined" && process.env.QWEATHER_KEY) {
-    return process.env.QWEATHER_KEY;
-  }
-  return "";
 }
 
 export function getWeatherIcon(iconCode: string): string {
