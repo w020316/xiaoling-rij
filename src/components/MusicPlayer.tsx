@@ -1,12 +1,20 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Music, Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X } from "lucide-react";
+import { Music, Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Search, Loader2, AlertCircle } from "lucide-react";
 
 interface Track {
   id: string;
   name: string;
   emoji: string;
+}
+
+interface OnlineTrack {
+  id: number;
+  name: string;
+  artists: string;
+  album: string;
+  duration: number;
 }
 
 const tracks: Track[] = [
@@ -20,8 +28,26 @@ const tracks: Track[] = [
   { id: "coffee-time", name: "咖啡时光", emoji: "☕" },
 ];
 
+const MOODS = [
+  { key: "healing", label: "治愈", emoji: "💚" },
+  { key: "love", label: "恋爱", emoji: "💕" },
+  { key: "relax", label: "放松", emoji: "🧘" },
+  { key: "coffee", label: "咖啡", emoji: "☕" },
+  { key: "sleep", label: "助眠", emoji: "🌙" },
+  { key: "reading", label: "看书", emoji: "📖" },
+];
+
 const STORAGE_KEY_TRACK = "music-player-track";
 const STORAGE_KEY_VOLUME = "music-player-volume";
+const STORAGE_KEY_MODE = "music-player-mode";
+const STORAGE_KEY_MOOD = "music-player-mood";
+
+function formatTime(seconds: number): string {
+  if (!seconds || !isFinite(seconds)) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 function createNoiseBuffer(ctx: AudioContext): AudioBuffer {
   const duration = 4;
@@ -428,6 +454,10 @@ export default function MusicPlayer() {
   const [isSupported, setIsSupported] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [mode, setMode] = useState<"ambient" | "online">(() => {
+    if (typeof window === "undefined") return "ambient";
+    return (localStorage.getItem(STORAGE_KEY_MODE) as "ambient" | "online") || "ambient";
+  });
   const [currentTrackIndex, setCurrentTrackIndex] = useState(() => {
     if (typeof window === "undefined") return 0;
     const saved = localStorage.getItem(STORAGE_KEY_TRACK);
@@ -444,10 +474,26 @@ export default function MusicPlayer() {
   });
   const [isMuted, setIsMuted] = useState(false);
 
+  const [mood, setMood] = useState(() => {
+    if (typeof window === "undefined") return "healing";
+    return localStorage.getItem(STORAGE_KEY_MOOD) || "healing";
+  });
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [searchResults, setSearchResults] = useState<OnlineTrack[]>([]);
+  const [playlist, setPlaylist] = useState<OnlineTrack[]>([]);
+  const [currentOnlineTrack, setCurrentOnlineTrack] = useState<OnlineTrack | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingPlaylist, setIsLoadingPlaylist] = useState(false);
+  const [onlineApiError, setOnlineApiError] = useState(false);
+
   const audioCtxRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
   const stopSoundRef = useRef<(() => void) | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     try {
@@ -466,7 +512,18 @@ export default function MusicPlayer() {
     if (masterGainRef.current) {
       masterGainRef.current.gain.value = isMuted ? 0 : volume;
     }
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume;
+    }
   }, [volume, isMuted]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_MODE, mode);
+  }, [mode]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_MOOD, mood);
+  }, [mood]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -482,6 +539,55 @@ export default function MusicPlayer() {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isPanelOpen]);
+
+  useEffect(() => {
+    if (mode === "online" && isPanelOpen && playlist.length === 0 && !onlineApiError) {
+      loadMoodPlaylist(mood);
+    }
+  }, [mode, isPanelOpen, mood]);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const stopOnlineAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
+    setCurrentOnlineTrack(null);
+    setCurrentTime(0);
+    setDuration(0);
+    setIsPlaying(false);
+  }, []);
+
+  const switchToAmbient = useCallback(() => {
+    stopOnlineAudio();
+    setMode("ambient");
+  }, [stopOnlineAudio]);
+
+  const stopSound = useCallback(() => {
+    if (stopSoundRef.current) {
+      stopSoundRef.current();
+      stopSoundRef.current = null;
+    }
+  }, []);
+
+  const switchToOnline = useCallback(() => {
+    stopSound();
+    setIsPlaying(false);
+    setMode("online");
+  }, [stopSound]);
 
   const getAudioContext = useCallback((): AudioContext | null => {
     try {
@@ -501,13 +607,6 @@ export default function MusicPlayer() {
     }
   }, [volume, isMuted]);
 
-  const stopSound = useCallback(() => {
-    if (stopSoundRef.current) {
-      stopSoundRef.current();
-      stopSoundRef.current = null;
-    }
-  }, []);
-
   const playTrack = useCallback(
     (trackId: string) => {
       stopSound();
@@ -524,15 +623,35 @@ export default function MusicPlayer() {
   const togglePlay = useCallback(() => {
     if (!isSupported) return;
 
+    if (mode === "online") {
+      if (!audioRef.current) return;
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      }
+      return;
+    }
+
     if (isPlaying) {
       stopSound();
       setIsPlaying(false);
     } else {
       playTrack(tracks[currentTrackIndex].id);
     }
-  }, [isSupported, isPlaying, currentTrackIndex, playTrack, stopSound]);
+  }, [isSupported, isPlaying, mode, currentTrackIndex, playTrack, stopSound]);
 
   const prevTrack = useCallback(() => {
+    if (mode === "online") {
+      if (playlist.length === 0 || !currentOnlineTrack) return;
+      const idx = playlist.findIndex((t) => t.id === currentOnlineTrack.id);
+      const newIdx = idx <= 0 ? playlist.length - 1 : idx - 1;
+      playOnlineTrack(playlist[newIdx]);
+      return;
+    }
+
     const newIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
     setCurrentTrackIndex(newIndex);
     if (isPlaying) {
@@ -545,9 +664,17 @@ export default function MusicPlayer() {
         setIsPlaying(true);
       }, 50);
     }
-  }, [currentTrackIndex, isPlaying, getAudioContext, stopSound]);
+  }, [mode, currentTrackIndex, isPlaying, getAudioContext, stopSound, playlist, currentOnlineTrack]);
 
   const nextTrack = useCallback(() => {
+    if (mode === "online") {
+      if (playlist.length === 0 || !currentOnlineTrack) return;
+      const idx = playlist.findIndex((t) => t.id === currentOnlineTrack.id);
+      const newIdx = idx >= playlist.length - 1 ? 0 : idx + 1;
+      playOnlineTrack(playlist[newIdx]);
+      return;
+    }
+
     const newIndex = (currentTrackIndex + 1) % tracks.length;
     setCurrentTrackIndex(newIndex);
     if (isPlaying) {
@@ -560,10 +687,12 @@ export default function MusicPlayer() {
         setIsPlaying(true);
       }, 50);
     }
-  }, [currentTrackIndex, isPlaying, getAudioContext, stopSound]);
+  }, [mode, currentTrackIndex, isPlaying, getAudioContext, stopSound, playlist, currentOnlineTrack]);
 
   const selectTrack = useCallback(
     (index: number) => {
+      if (mode === "online") return;
+
       if (index === currentTrackIndex && isPlaying) {
         togglePlay();
         return;
@@ -578,11 +707,102 @@ export default function MusicPlayer() {
         setIsPlaying(true);
       }, 50);
     },
-    [currentTrackIndex, isPlaying, getAudioContext, stopSound, togglePlay],
+    [mode, currentTrackIndex, isPlaying, getAudioContext, stopSound, togglePlay],
   );
 
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => !prev);
+  }, []);
+
+  const loadMoodPlaylist = useCallback(async (moodKey: string) => {
+    setIsLoadingPlaylist(true);
+    setOnlineApiError(false);
+    try {
+      const res = await fetch(`/api/music?action=playlist&mood=${moodKey}`);
+      const data = await res.json();
+      if (data.tracks) {
+        setPlaylist(data.tracks.slice(0, 30));
+      } else {
+        setPlaylist([]);
+      }
+    } catch {
+      setOnlineApiError(true);
+      setPlaylist([]);
+    }
+    setIsLoadingPlaylist(false);
+  }, []);
+
+  const searchMusic = useCallback(async (keyword: string) => {
+    if (!keyword.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setIsSearching(true);
+    setOnlineApiError(false);
+    try {
+      const res = await fetch(`/api/music?action=search&keyword=${encodeURIComponent(keyword)}`);
+      const data = await res.json();
+      setSearchResults(data.songs || []);
+    } catch {
+      setOnlineApiError(true);
+      setSearchResults([]);
+    }
+    setIsSearching(false);
+  }, []);
+
+  const playOnlineTrack = useCallback(async (song: OnlineTrack) => {
+    setOnlineApiError(false);
+    try {
+      const res = await fetch(`/api/music?action=url&songId=${song.id}`);
+      const data = await res.json();
+      if (data.url) {
+        stopOnlineAudio();
+        const audio = new Audio();
+        audio.src = data.url;
+        audio.volume = isMuted ? 0 : volume;
+        audio.ontimeupdate = () => setCurrentTime(audio.currentTime);
+        audio.onloadedmetadata = () => setDuration(audio.duration);
+        audio.onended = () => {
+          setIsPlaying(false);
+          setCurrentTime(0);
+        };
+        audio.onerror = () => {
+          setOnlineApiError(true);
+          setIsPlaying(false);
+        };
+        audioRef.current = audio;
+        audio.play().catch(() => {
+          setOnlineApiError(true);
+        });
+        setIsPlaying(true);
+        setCurrentOnlineTrack(song);
+      } else {
+        setOnlineApiError(true);
+      }
+    } catch {
+      setOnlineApiError(true);
+    }
+  }, [volume, isMuted, stopOnlineAudio]);
+
+  const handleSearchInput = useCallback(
+    (value: string) => {
+      setSearchKeyword(value);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = setTimeout(() => {
+        searchMusic(value);
+      }, 500);
+    },
+    [searchMusic],
+  );
+
+  const handleProgressChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setCurrentTime(time);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
   }, []);
 
   const currentTrack = tracks[currentTrackIndex];
@@ -604,7 +824,7 @@ export default function MusicPlayer() {
         onClick={() => {
           if (!isPanelOpen) {
             setIsPanelOpen(true);
-            if (!audioCtxRef.current) {
+            if (mode === "ambient" && !audioCtxRef.current) {
               getAudioContext();
             }
           } else {
@@ -622,12 +842,12 @@ export default function MusicPlayer() {
       {isPanelOpen && (
         <div
           ref={panelRef}
-          className="fixed bottom-[7rem] right-4 z-50 w-72 glass-card p-4 slide-up max-h-[60vh] flex flex-col"
+          className="fixed bottom-[7rem] right-4 z-50 w-80 glass-card p-4 slide-up max-h-[65vh] flex flex-col"
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold gradient-text flex items-center gap-1.5">
               <Music size={14} />
-              治愈音乐
+              {mode === "ambient" ? "治愈音乐" : "在线音乐"}
             </h3>
             <button
               onClick={() => setIsPanelOpen(false)}
@@ -637,86 +857,299 @@ export default function MusicPlayer() {
             </button>
           </div>
 
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="text-2xl">{currentTrack.emoji}</span>
-            <span className="text-sm font-medium text-foreground">{currentTrack.name}</span>
-          </div>
-
-          <div className="flex items-center justify-center gap-4 mb-3">
+          <div className="flex gap-1.5 mb-3">
             <button
-              onClick={prevTrack}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              onClick={switchToAmbient}
+              className={`flex-1 py-1.5 px-2 rounded-full text-xs font-medium transition-all duration-200 ${
+                mode === "ambient"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
             >
-              <SkipBack size={16} />
+              🎹 环境音
             </button>
-
             <button
-              onClick={togglePlay}
-              className="w-10 h-10 rounded-full glass-button flex items-center justify-center"
+              onClick={switchToOnline}
+              className={`flex-1 py-1.5 px-2 rounded-full text-xs font-medium transition-all duration-200 ${
+                mode === "online"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
             >
-              {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
-            </button>
-
-            <button
-              onClick={nextTrack}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              <SkipForward size={16} />
+              🎵 在线音乐
             </button>
           </div>
 
-          <div className="flex items-center gap-2 mb-3 px-1">
-            <button
-              onClick={toggleMute}
-              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-            >
-              {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            </button>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={isMuted ? 0 : volume}
-              onChange={(e) => {
-                const v = parseFloat(e.target.value);
-                setVolume(v);
-                if (v > 0 && isMuted) setIsMuted(false);
-                if (v === 0 && !isMuted) setIsMuted(true);
-              }}
-              className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
-              style={{
-                background: `linear-gradient(to right, var(--primary) ${(isMuted ? 0 : volume) * 100}%, var(--muted) ${(isMuted ? 0 : volume) * 100}%)`,
-              }}
-            />
-          </div>
+          {mode === "ambient" && (
+            <>
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <span className="text-2xl">{currentTrack.emoji}</span>
+                <span className="text-sm font-medium text-foreground">{currentTrack.name}</span>
+              </div>
 
-          <div className="flex-1 overflow-y-auto space-y-0.5 -mx-1">
-            {tracks.map((track, index) => {
-              const isActive = index === currentTrackIndex;
-              return (
+              <div className="flex items-center justify-center gap-4 mb-3">
                 <button
-                  key={track.id}
-                  onClick={() => selectTrack(index)}
-                  className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-sm transition-all duration-200 ${
-                    isActive
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                  }`}
+                  onClick={prevTrack}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
-                  <span className="text-base">{track.emoji}</span>
-                  <span>{track.name}</span>
-                  {isActive && isPlaying && (
-                    <span className="ml-auto flex gap-0.5 items-end h-3">
-                      <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "60%", animationDelay: "0s" }} />
-                      <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "100%", animationDelay: "0.2s" }} />
-                      <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "40%", animationDelay: "0.4s" }} />
-                    </span>
-                  )}
+                  <SkipBack size={16} />
                 </button>
-              );
-            })}
-          </div>
+
+                <button
+                  onClick={togglePlay}
+                  className="w-10 h-10 rounded-full glass-button flex items-center justify-center"
+                >
+                  {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+                </button>
+
+                <button
+                  onClick={nextTrack}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <SkipForward size={16} />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <button
+                  onClick={toggleMute}
+                  className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                >
+                  {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={isMuted ? 0 : volume}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    setVolume(v);
+                    if (v > 0 && isMuted) setIsMuted(false);
+                    if (v === 0 && !isMuted) setIsMuted(true);
+                  }}
+                  className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, var(--primary) ${(isMuted ? 0 : volume) * 100}%, var(--muted) ${(isMuted ? 0 : volume) * 100}%)`,
+                  }}
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-0.5 -mx-1">
+                {tracks.map((track, index) => {
+                  const isActive = index === currentTrackIndex;
+                  return (
+                    <button
+                      key={track.id}
+                      onClick={() => selectTrack(index)}
+                      className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-sm transition-all duration-200 ${
+                        isActive
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                      }`}
+                    >
+                      <span className="text-base">{track.emoji}</span>
+                      <span>{track.name}</span>
+                      {isActive && isPlaying && (
+                        <span className="ml-auto flex gap-0.5 items-end h-3">
+                          <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "60%", animationDelay: "0s" }} />
+                          <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "100%", animationDelay: "0.2s" }} />
+                          <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "40%", animationDelay: "0.4s" }} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {mode === "online" && (
+            <>
+              {onlineApiError && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-500 bg-amber-500/10 rounded-lg px-2 py-1.5 mb-2">
+                  <AlertCircle size={12} />
+                  在线音乐暂不可用，请尝试环境音模式
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-1 mb-3">
+                {MOODS.map((m) => (
+                  <button
+                    key={m.key}
+                    onClick={() => {
+                      setMood(m.key);
+                      setSearchKeyword("");
+                      setSearchResults([]);
+                      loadMoodPlaylist(m.key);
+                    }}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                      mood === m.key
+                        ? "bg-primary/20 text-primary border border-primary/30"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
+                    }`}
+                  >
+                    {m.emoji} {m.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-1.5 mb-3">
+                <div className="flex-1 relative">
+                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={searchKeyword}
+                    onChange={(e) => handleSearchInput(e.target.value)}
+                    placeholder="搜索歌曲..."
+                    className="w-full pl-7 pr-2 py-1.5 rounded-lg text-xs bg-muted/50 border border-border focus:border-primary/50 focus:outline-none transition-colors"
+                  />
+                </div>
+                {isSearching && <Loader2 size={14} className="animate-spin text-muted-foreground flex-shrink-0" />}
+              </div>
+
+              {currentOnlineTrack && (
+                <>
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground truncate">{currentOnlineTrack.name}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{currentOnlineTrack.artists}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 mb-2 px-1">
+                    <span className="text-[10px] text-muted-foreground w-8 text-right flex-shrink-0">{formatTime(currentTime)}</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration || 1}
+                      step="0.1"
+                      value={currentTime}
+                      onChange={handleProgressChange}
+                      className="flex-1 h-1 rounded-full appearance-none cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, var(--primary) ${duration ? (currentTime / duration) * 100 : 0}%, var(--muted) ${duration ? (currentTime / duration) * 100 : 0}%)`,
+                      }}
+                    />
+                    <span className="text-[10px] text-muted-foreground w-8 flex-shrink-0">{formatTime(duration)}</span>
+                  </div>
+
+                  <div className="flex items-center justify-center gap-3 mb-3">
+                    <button
+                      onClick={prevTrack}
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    >
+                      <SkipBack size={15} />
+                    </button>
+
+                    <button
+                      onClick={togglePlay}
+                      className="w-9 h-9 rounded-full glass-button flex items-center justify-center"
+                    >
+                      {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+                    </button>
+
+                    <button
+                      onClick={nextTrack}
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    >
+                      <SkipForward size={15} />
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <button
+                  onClick={toggleMute}
+                  className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                >
+                  {isMuted || volume === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={isMuted ? 0 : volume}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    setVolume(v);
+                    if (v > 0 && isMuted) setIsMuted(false);
+                    if (v === 0 && !isMuted) setIsMuted(true);
+                  }}
+                  className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, var(--primary) ${(isMuted ? 0 : volume) * 100}%, var(--muted) ${(isMuted ? 0 : volume) * 100}%)`,
+                  }}
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-0.5 -mx-1">
+                {isLoadingPlaylist && (
+                  <div className="flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground">
+                    <Loader2 size={14} className="animate-spin" />
+                    加载歌单中...
+                  </div>
+                )}
+
+                {searchResults.length > 0 && (
+                  <>
+                    <p className="text-[10px] text-muted-foreground px-2 py-1">搜索结果</p>
+                    {searchResults.map((song) => (
+                      <button
+                        key={`search-${song.id}`}
+                        onClick={() => playOnlineTrack(song)}
+                        className={`w-full flex items-center gap-2 px-2 py-2 rounded-xl text-xs transition-all duration-200 text-left ${
+                          currentOnlineTrack?.id === song.id
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        }`}
+                      >
+                        <span className="text-sm flex-shrink-0">🎵</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-foreground font-medium">{song.name}</p>
+                          <p className="truncate text-[10px]">{song.artists}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {searchResults.length === 0 && playlist.length > 0 && (
+                  <>
+                    <p className="text-[10px] text-muted-foreground px-2 py-1">歌单列表</p>
+                    {playlist.map((song) => (
+                      <button
+                        key={`playlist-${song.id}`}
+                        onClick={() => playOnlineTrack(song)}
+                        className={`w-full flex items-center gap-2 px-2 py-2 rounded-xl text-xs transition-all duration-200 text-left ${
+                          currentOnlineTrack?.id === song.id
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        }`}
+                      >
+                        <span className="text-sm flex-shrink-0">🎵</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-foreground font-medium">{song.name}</p>
+                          <p className="truncate text-[10px]">{song.artists}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {!isLoadingPlaylist && searchResults.length === 0 && playlist.length === 0 && searchKeyword && (
+                  <p className="text-xs text-muted-foreground text-center py-4">没有找到相关歌曲</p>
+                )}
+
+                {!isLoadingPlaylist && searchResults.length === 0 && playlist.length === 0 && !searchKeyword && !onlineApiError && (
+                  <p className="text-xs text-muted-foreground text-center py-4">选择一个心情或搜索歌曲吧 🎧</p>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
     </>
