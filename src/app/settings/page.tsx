@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   ArrowLeft, User, Bell, Database, Info,
-  Download, Trash2, ExternalLink, Save, X
+  Download, Trash2, ExternalLink, Save, X, Clock
 } from "lucide-react";
 import Link from "next/link";
 
@@ -147,6 +147,18 @@ export default function SettingsPage() {
 
         <section className="glass-card p-4 fade-in stagger-1">
           <h2 className="text-sm font-bold mb-4 flex items-center gap-2">
+            <Clock size={16} className="text-primary" /> 时间与天气
+          </h2>
+          <Link
+            href="/settings/time"
+            className="glass-button-outline py-2.5 text-sm flex items-center justify-center gap-2"
+          >
+            <Clock size={16} /> 时间与天气设置
+          </Link>
+        </section>
+
+        <section className="glass-card p-4 fade-in stagger-2">
+          <h2 className="text-sm font-bold mb-4 flex items-center gap-2">
             <Bell size={16} className="text-primary" /> 通知设置
           </h2>
           <div className="flex flex-col gap-3">
@@ -172,7 +184,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="glass-card p-4 fade-in stagger-2">
+        <section className="glass-card p-4 fade-in stagger-3">
           <h2 className="text-sm font-bold mb-4 flex items-center gap-2">
             <Database size={16} className="text-primary" /> 数据管理
           </h2>
@@ -192,7 +204,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="glass-card p-4 fade-in stagger-3">
+        <section className="glass-card p-4 fade-in stagger-4">
           <h2 className="text-sm font-bold mb-4 flex items-center gap-2">
             <Info size={16} className="text-primary" /> 关于
           </h2>

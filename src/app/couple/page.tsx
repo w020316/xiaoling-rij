@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
-  Heart, Plus, CheckCircle2, Star, Link2, Trash2, X
+  Heart, Plus, CheckCircle2, Star, Link2, Trash2, X, RefreshCw
 } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
 
@@ -220,7 +221,7 @@ export default function CouplePage() {
             <p className="text-[10px] text-muted-foreground mt-2">分享邀请码给TA，绑定情侣关系</p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="glass-card p-4 text-center lg:p-5">
               <p className="text-2xl mb-1 lg:text-3xl">🎂</p>
               <p className="text-xs text-muted-foreground lg:text-sm">纪念日</p>
@@ -238,6 +239,11 @@ export default function CouplePage() {
               <p className="text-xs text-muted-foreground lg:text-sm">存钱目标</p>
               <p className="text-sm font-bold text-primary mt-1 lg:text-base">{savingsGoals.length} 个</p>
             </div>
+            <Link href="/couple/sync" className="glass-card p-4 text-center lg:p-5 block hover-lift">
+              <RefreshCw size={28} className="mx-auto mb-1 text-primary lg:size-8" />
+              <p className="text-xs text-muted-foreground lg:text-sm">数据同步</p>
+              <p className="text-sm font-bold text-primary mt-1 lg:text-base">管理</p>
+            </Link>
           </div>
         </div>
       )}

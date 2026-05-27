@@ -1,6 +1,9 @@
 "use client";
 
 import { staticDB, isStaticMode } from "./static-db";
+import { getTemperatureAdvice, getWeatherIcon } from "./qweather";
+import { getStoredWeather, setStoredWeather, getStoredCity, setStoredCity } from "./weather-cache";
+import { getDailyQuote } from "./quotes";
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -68,7 +71,23 @@ function getTodayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-const FAKE_WEATHER = { emoji: "☁️", temp: 25, description: "多云", city: "北京" };
+const CITY_WEATHER_MAP: Record<string, { temp: number; desc: string; icon: string }> = {
+  "101010100": { temp: 22, desc: "晴", icon: "100" },
+  "101020100": { temp: 20, desc: "多云", icon: "101" },
+  "101210101": { temp: 23, desc: "小雨", icon: "305" },
+  "101280101": { temp: 28, desc: "多云", icon: "101" },
+  "101190101": { temp: 21, desc: "阴", icon: "104" },
+  "101110101": { temp: 25, desc: "晴", icon: "100" },
+  "101270101": { temp: 18, desc: "小雨", icon: "305" },
+  "101230101": { temp: 13, desc: "多云", icon: "101" },
+  "101040101": { temp: 24, desc: "阴", icon: "104" },
+  "101160101": { temp: 19, desc: "晴", icon: "100" },
+  "101070101": { temp: 21, desc: "多云", icon: "101" },
+  "101200101": { temp: 22, desc: "晴", icon: "100" },
+  "101250101": { temp: 27, desc: "多云", icon: "101" },
+  "101240101": { temp: 23, desc: "小雨", icon: "305" },
+  "101260101": { temp: 21, desc: "阴", icon: "104" },
+};
 const FALLBACK_QUOTES = [
   "心存温柔，山河浪漫。",
   "每一天都是新的开始，带着笑容出发吧 ✨",
@@ -80,6 +99,29 @@ const FALLBACK_QUOTES = [
   "温柔半两，从容一生。",
   "星光不问赶路人，时光不负有心人。",
   "保持热爱，奔赴山海。",
+  "愿你被这个世界温柔以待。",
+  "心之所向，素履以往。",
+  "凡是过往，皆为序章。",
+  "你值得世间所有的美好。",
+  "今天的不开心就到此为止。",
+  "日子常新，未来不远。",
+  "愿你眼中有光，心中有爱。",
+  "山高路远，看世界也找自己。",
+  "好事总会发生在下个转弯。",
+  "把身体照顾好，把喜欢的事做好。",
+  "最好的时光在路上。",
+  "生活原本沉闷，但跑起来就有风。",
+  "希望今天的你比昨天更快乐。",
+  "一切尽意，百事从欢。",
+  "你只管努力，剩下的交给时间。",
+  "少研究别人，多塑造自己。",
+  "种一棵树最好的时间是十年前，其次是现在。",
+  "愿你在平凡的日子里闪闪发光。",
+  "放慢脚步，感受生活的温度。",
+  "每天给自己一个微笑的理由。",
+  "哪怕只有一点点进步，也值得庆祝。",
+  "前路漫漫亦灿灿。",
+  "做自己的太阳，无需凭借谁的光。",
 ];
 
 function getFallbackQuote(): string {
@@ -400,6 +442,27 @@ export function initStaticAPI(): boolean {
         staticDB.deleteCalorie(id);
         return jsonResponse({ success: true });
       }
+      if (pathname === "/api/calorie/analyze" && method === "POST") {
+        const body = await getBody(init!);
+        return jsonResponse({
+          name: "识别为日常餐食",
+          calories: 350,
+          protein: 20,
+          fat: 12,
+          carbs: 40,
+          suggestion: "静态模式下无法使用AI识别图片，请手动搜索食物添加。这是一份营养均衡的建议摄入。",
+        });
+      }
+      if (pathname === "/api/calorie/suggest" && method === "POST") {
+        const body = await getBody(init!);
+        const totalCalories = body.totalCalories as number || 0;
+        const suggestion = totalCalories > 2500
+          ? "今日热量摄入偏高，建议明天多运动、少油腻。"
+          : totalCalories < 1200
+            ? "今日热量偏低，记得多吃一些蛋白质。"
+            : "今日饮食均衡，继续保持！多吃蔬菜水果。";
+        return jsonResponse({ suggestion, dailyTarget: 2000, calorieAdvice: suggestion });
+      }
 
       // ─── Schedule ───
       if (pathname === "/api/schedule" && method === "GET") {
@@ -429,12 +492,88 @@ export function initStaticAPI(): boolean {
 
       // ─── Quote ───
       if (pathname === "/api/quote") {
-        return jsonResponse({ content: getFallbackQuote() });
+        const quote = getDailyQuote();
+        return jsonResponse({
+          content: quote.content,
+          theme: quote.theme,
+          author: quote.author || null,
+          total: 100
+        });
       }
 
       // ─── Weather ───
-      if (pathname === "/api/weather") {
-        return jsonResponse(FAKE_WEATHER);
+      if (pathname === "/api/weather" && method === "GET") {
+        const locationParam = getQueryParam(url, "location");
+        const storedCity = getStoredCity();
+        const locId = locationParam || storedCity.locationId;
+        const cityData = CITY_WEATHER_MAP[locId] || CITY_WEATHER_MAP["101010100"];
+
+        const cityNames: Record<string, string> = {
+          "101010100": "北京", "101020100": "上海", "101210101": "杭州",
+          "101280101": "广州", "101190101": "南京", "101110101": "西安",
+          "101270101": "成都", "101230101": "福州", "101040101": "重庆",
+          "101160101": "兰州", "101070101": "沈阳", "101200101": "武汉",
+          "101250101": "深圳", "101240101": "厦门", "101260101": "贵阳",
+        };
+        const cityName = cityNames[locId] || storedCity.city;
+        const feelsLike = String(cityData.temp + (cityData.temp > 20 ? 2 : 1));
+        const advice = getTemperatureAdvice(cityData.temp);
+        const emoji = getWeatherIcon(cityData.icon);
+
+        return jsonResponse({
+          hot: cityData.temp,
+          feelsLike,
+          desc: cityData.desc,
+          emoji,
+          humidity: "45",
+          windDir: "东南风",
+          windScale: "3",
+          advice: `${advice.clothing}；${advice.activity}`,
+          aiTip: `当前温度 ${cityData.temp}°C，${advice.level}。${advice.clothing}。${advice.health}`,
+          city: cityName,
+        });
+      }
+
+      if (pathname === "/api/weather" && method === "POST") {
+        const body = await getBody(init!);
+        const action = body.action as string;
+
+        if (action === "search") {
+          const keyword = (body.keyword as string || "").toLowerCase();
+          const cityList = [
+            { id: "101010100", name: "北京", adm1: "北京", adm2: "北京" },
+            { id: "101020100", name: "上海", adm1: "上海", adm2: "上海" },
+            { id: "101210101", name: "杭州", adm1: "浙江", adm2: "杭州" },
+            { id: "101280101", name: "广州", adm1: "广东", adm2: "广州" },
+            { id: "101190101", name: "南京", adm1: "江苏", adm2: "南京" },
+            { id: "101110101", name: "西安", adm1: "陕西", adm2: "西安" },
+            { id: "101270101", name: "成都", adm1: "四川", adm2: "成都" },
+            { id: "101230101", name: "福州", adm1: "福建", adm2: "福州" },
+            { id: "101040101", name: "重庆", adm1: "重庆", adm2: "重庆" },
+            { id: "101160101", name: "兰州", adm1: "甘肃", adm2: "兰州" },
+            { id: "101070101", name: "沈阳", adm1: "辽宁", adm2: "沈阳" },
+            { id: "101200101", name: "武汉", adm1: "湖北", adm2: "武汉" },
+            { id: "101250101", name: "深圳", adm1: "广东", adm2: "深圳" },
+            { id: "101240101", name: "厦门", adm1: "福建", adm2: "厦门" },
+            { id: "101260101", name: "贵阳", adm1: "贵州", adm2: "贵阳" },
+          ];
+          const filtered = keyword
+            ? cityList.filter(c => c.name.toLowerCase().includes(keyword) || c.adm2.toLowerCase().includes(keyword))
+            : cityList;
+          return jsonResponse(filtered);
+        }
+
+        if (action === "setCity") {
+          const city = body.city as string;
+          const locationId = body.locationId as string;
+          if (!city || !locationId) {
+            return jsonResponse({ error: "缺少城市信息" }, 400);
+          }
+          setStoredCity(city, locationId);
+          return jsonResponse({ success: true });
+        }
+
+        return jsonResponse({ error: "未知操作" }, 400);
       }
 
       // ─── Holiday ───
@@ -457,6 +596,35 @@ export function initStaticAPI(): boolean {
       }
       if (pathname === "/api/ai/weekly") {
         return handleAIWeekly(init);
+      }
+
+      // ─── Sync ───
+      if (pathname === "/api/sync" && method === "GET") {
+        return jsonResponse({
+          syncAvailable: false,
+          message: "静态模式下不支持云端同步，请使用数据导出/导入功能",
+        });
+      }
+
+      if (pathname === "/api/sync" && method === "POST") {
+        const body = await getBody(init!);
+        const action = body.action as string;
+        if (action === "merge") {
+          return jsonResponse({
+            success: true,
+            message: "本地数据已合并",
+            mergedCount: body.data ? Object.keys(body.data as object).length : 0,
+          });
+        }
+        if (action === "pull") {
+          return jsonResponse({
+            success: true,
+            message: "已拉取本地备份数据",
+            data: {},
+            lastSync: new Date().toISOString(),
+          });
+        }
+        return jsonResponse({ error: "未知操作" }, 400);
       }
 
       // ─── DB Init ───

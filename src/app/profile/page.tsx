@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import {
-  Palette, Heart, ChevronRight, User, X
+  Palette, Heart, ChevronRight, User, X, CloudSun
 } from "lucide-react";
 import Link from "next/link";
 
@@ -86,6 +86,7 @@ export default function ProfilePage() {
     { emoji: "📅", label: "课程表", href: "/schedule", color: "text-blue-500" },
     { emoji: "📊", label: "成长报告", href: "/ai/weekly", color: "text-green-500" },
     { emoji: "🌙", label: "晚安总结", href: "/ai/goodnight", color: "text-purple-500" },
+    { emoji: "🌤️", label: "天气", href: "/weather", color: "text-sky-400" },
     { emoji: "🔔", label: "提醒设置", href: "/settings#notifications", color: "text-yellow-500" },
     { emoji: "💕", label: "情侣空间", href: "/couple", color: "text-pink-500" },
     { emoji: "🛡️", label: "隐私设置", href: "/settings", color: "text-green-600" },

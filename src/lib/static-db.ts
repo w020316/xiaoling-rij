@@ -518,4 +518,42 @@ export const staticDB = {
     dbSet("schedules", arr);
     return true;
   },
+
+  getSyncVersion(): string {
+    return localStorage.getItem("xy_daily_sync_version") || "0";
+  },
+  setSyncVersion(version: string): void {
+    localStorage.setItem("xy_daily_sync_version", version);
+  },
+  exportAll(): string {
+    const all: Record<string, any> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) all[key] = localStorage.getItem(key);
+    }
+    return JSON.stringify(all, null, 2);
+  },
+  importAll(jsonStr: string): { imported: number; skipped: number } {
+    try {
+      const data = JSON.parse(jsonStr);
+      let imported = 0;
+      let skipped = 0;
+      for (const [key, value] of Object.entries(data)) {
+        if (key.startsWith("xy_daily_")) {
+          if (typeof value === "string") {
+            localStorage.setItem(key, value);
+            imported++;
+          } else {
+            localStorage.setItem(key, JSON.stringify(value));
+            imported++;
+          }
+        } else {
+          skipped++;
+        }
+      }
+      return { imported, skipped };
+    } catch {
+      return { imported: 0, skipped: 0 };
+    }
+  },
 };

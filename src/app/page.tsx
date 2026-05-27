@@ -30,6 +30,9 @@ interface WeatherData {
   emoji: string;
   humidity: string;
   feelsLike: string;
+  city?: string;
+  aiTip?: string;
+  advice?: { level: string; icon: string; clothing: string; activity: string; health: string };
 }
 
 interface ScheduleItem {
@@ -255,10 +258,11 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="glass-card px-3 py-1.5 flex items-center gap-1.5 text-sm">
+          <Link href="/weather" className="glass-card px-3 py-1.5 flex items-center gap-1.5 text-sm hover:bg-primary/5 transition-colors">
             <CloudSun size={16} className="text-primary" />
-            <span>{weather?.emoji} {weather?.temp}°C</span>
-          </div>
+            <span>{weather?.emoji} {weather?.temp}{weather?.temp !== "--" ? "°C" : ""}</span>
+            {weather?.city && <span className="text-[10px] text-muted-foreground ml-0.5">{weather.city}</span>}
+          </Link>
         </header>
 
         <div className="glass-card p-4 text-center relative overflow-hidden fade-in breathe-border">
@@ -430,10 +434,11 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="glass-card px-4 py-2.5 flex items-center gap-2 text-base">
+            <Link href="/weather" className="glass-card px-4 py-2.5 flex items-center gap-2 text-base hover:bg-primary/5 transition-colors">
               <CloudSun size={18} className="text-primary" />
-              <span>{weather?.emoji} {weather?.temp}°C</span>
-            </div>
+              <span>{weather?.emoji} {weather?.temp}{weather?.temp !== "--" ? "°C" : ""}</span>
+              {weather?.city && <span className="text-xs text-muted-foreground">{weather.city}</span>}
+            </Link>
           </div>
         </header>
 

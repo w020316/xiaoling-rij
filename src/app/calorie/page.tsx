@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Apple, Search, Trash2, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Apple, Search, Trash2, X, Camera, ImageIcon, Loader2, Bot, Sparkles, Plus } from "lucide-react";
 
 const foodDatabase: Record<string, { calories: number; protein: number; fat: number; carbs: number }> = {
   "鸡胸肉": { calories: 165, protein: 31, fat: 3.6, carbs: 0 },
@@ -31,6 +31,21 @@ interface CalorieRecord {
   mealType: string;
 }
 
+interface AnalyzeResult {
+  name: string;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  suggestion: string;
+}
+
+interface SuggestResult {
+  suggestion: string;
+  dailyTarget: number;
+  calorieAdvice: string;
+}
+
 export default function CaloriePage() {
   const [search, setSearch] = useState("");
   const [selectedMeal, setSelectedMeal] = useState("lunch");
@@ -38,6 +53,17 @@ export default function CaloriePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null);
+  const [addingResult, setAddingResult] = useState(false);
+  const [suggest, setSuggest] = useState<SuggestResult | null>(null);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
   const meals = [
     { key: "breakfast", label: "早餐" },
@@ -56,6 +82,14 @@ export default function CaloriePage() {
       .catch(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (records.length === 0) {
+      setSuggest(null);
+      return;
+    }
+    loadSuggestion();
+  }, [records]);
+
   const filteredFoods = Object.entries(foodDatabase).filter(([name]) =>
     name.includes(search)
   );
@@ -64,6 +98,8 @@ export default function CaloriePage() {
   const totalProtein = records.reduce((sum, r) => sum + r.protein, 0);
   const totalFat = records.reduce((sum, r) => sum + r.fat, 0);
   const totalCarbs = records.reduce((sum, r) => sum + r.carbs, 0);
+
+  const caloriePercent = Math.min((totalCalories / 2000) * 100, 100);
 
   async function addFood(name: string) {
     const food = foodDatabase[name];
@@ -103,6 +139,96 @@ export default function CaloriePage() {
     if (deleteId) deleteRecord(deleteId);
   }
 
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setAnalyzeResult(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleAnalyze() {
+    if (!imagePreview) return;
+    setAnalyzing(true);
+    setAnalyzeResult(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/calorie/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: imagePreview }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "识别失败，请重试");
+        return;
+      }
+      setAnalyzeResult(data);
+    } catch {
+      setError("AI 识别请求失败，请检查网络");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  async function handleAddResult() {
+    if (!analyzeResult) return;
+    setAddingResult(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/calorie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          foodName: analyzeResult.name,
+          calories: analyzeResult.calories,
+          protein: analyzeResult.protein,
+          fat: analyzeResult.fat,
+          carbs: analyzeResult.carbs,
+          mealType: selectedMeal,
+        }),
+      });
+      const record = await res.json();
+      setRecords((prev) => [...prev, record]);
+      setImageFile(null);
+      setImagePreview(null);
+      setAnalyzeResult(null);
+    } catch {
+      setError("添加记录失败，请重试");
+    } finally {
+      setAddingResult(false);
+    }
+  }
+
+  async function loadSuggestion() {
+    setSuggestLoading(true);
+    try {
+      const res = await fetch("/api/calorie/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          totalCalories,
+          totalProtein,
+          totalFat,
+          totalCarbs,
+          records,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuggest(data);
+      }
+    } catch {
+      //
+    } finally {
+      setSuggestLoading(false);
+    }
+  }
+
   const mealLabel = (key: string) => meals.find((m) => m.key === key)?.label || key;
 
   return (
@@ -113,7 +239,7 @@ export default function CaloriePage() {
       </header>
 
       {error && (
-        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in">
+        <div className="glass-card p-3 mb-4 bg-red-500/10 flex items-center justify-between fade-in border-red-500/30">
           <span className="text-xs text-red-500">{error}</span>
           <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">
             <X size={14} />
@@ -122,11 +248,25 @@ export default function CaloriePage() {
       )}
 
       <div className="glass-card p-4 mb-4">
-        <div className="text-center mb-3">
+        <div className="text-center mb-2">
           <p className="text-3xl font-bold text-primary">{totalCalories}</p>
           <p className="text-xs text-muted-foreground">今日摄入 (kcal)</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-3">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${caloriePercent}%`,
+              background: caloriePercent > 80
+                ? "linear-gradient(90deg, #f97316, #ef4444)"
+                : "linear-gradient(90deg, var(--primary), var(--accent))",
+            }}
+          />
+        </div>
+        <p className="text-[10px] text-center text-muted-foreground">
+          目标 2000kcal · {caloriePercent.toFixed(0)}%
+        </p>
+        <div className="grid grid-cols-3 gap-2 text-center mt-3">
           <div className="glass-card p-2">
             <p className="text-sm font-bold text-blue-500">{totalProtein.toFixed(1)}g</p>
             <p className="text-[10px] text-muted-foreground">蛋白质</p>
@@ -140,6 +280,129 @@ export default function CaloriePage() {
             <p className="text-[10px] text-muted-foreground">碳水</p>
           </div>
         </div>
+      </div>
+
+      <div className="glass-card p-4 mb-4">
+        <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
+          <Sparkles size={12} className="text-primary" />
+          AI 食物识别
+        </p>
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => cameraRef.current?.click()}
+            className="glass-button-outline flex-1 py-2 text-sm flex items-center justify-center gap-1.5"
+          >
+            <Camera size={14} />
+            拍照识别
+          </button>
+          <button
+            onClick={() => galleryRef.current?.click()}
+            className="glass-button-outline flex-1 py-2 text-sm flex items-center justify-center gap-1.5"
+          >
+            <ImageIcon size={14} />
+            从相册选择
+          </button>
+        </div>
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleImageSelect}
+          className="hidden"
+        />
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageSelect}
+          className="hidden"
+        />
+
+        {imagePreview && (
+          <div className="fade-in">
+            <div className="flex items-center gap-3 mb-3">
+              <img
+                src={imagePreview}
+                alt="预览"
+                className="w-16 h-16 rounded-xl object-cover border border-border"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate">{imageFile?.name || "已选择图片"}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {imageFile?.size ? `${(imageFile.size / 1024).toFixed(1)} KB` : ""}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setImageFile(null);
+                  setImagePreview(null);
+                  setAnalyzeResult(null);
+                }}
+                className="text-muted-foreground hover:text-red-500"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {!analyzing && !analyzeResult && (
+              <button onClick={handleAnalyze} className="glass-button w-full py-2 text-sm">
+                <Sparkles size={14} className="inline mr-1" />
+                开始识别
+              </button>
+            )}
+
+            {analyzing && (
+              <div className="glass-card p-4 text-center flex items-center justify-center gap-2">
+                <Loader2 size={18} className="text-primary animate-spin" />
+                <span className="text-sm text-muted-foreground">AI 正在识别中... 🔍</span>
+              </div>
+            )}
+
+            {analyzeResult && !analyzing && (
+              <div className="glass-card p-4 fade-in">
+                <p className="text-lg font-bold mb-1">{analyzeResult.name}</p>
+                <p className="text-2xl font-bold text-primary mb-3">{analyzeResult.calories} kcal</p>
+                <div className="grid grid-cols-3 gap-2 text-center mb-3">
+                  <div className="glass-card p-2">
+                    <p className="text-xs font-bold text-blue-500">{analyzeResult.protein}g</p>
+                    <p className="text-[10px] text-muted-foreground">蛋白质</p>
+                  </div>
+                  <div className="glass-card p-2">
+                    <p className="text-xs font-bold text-yellow-500">{analyzeResult.fat}g</p>
+                    <p className="text-[10px] text-muted-foreground">脂肪</p>
+                  </div>
+                  <div className="glass-card p-2">
+                    <p className="text-xs font-bold text-orange-500">{analyzeResult.carbs}g</p>
+                    <p className="text-[10px] text-muted-foreground">碳水</p>
+                  </div>
+                </div>
+                {analyzeResult.suggestion && (
+                  <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
+                    💡 {analyzeResult.suggestion}
+                  </p>
+                )}
+                <button
+                  onClick={handleAddResult}
+                  disabled={addingResult}
+                  className="glass-button w-full py-2 text-sm flex items-center justify-center gap-1.5"
+                >
+                  {addingResult ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      添加中...
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={14} />
+                      添加到记录
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -207,9 +470,40 @@ export default function CaloriePage() {
           </div>
         ))}
         {records.length === 0 && !loading && (
-          <p className="text-center text-sm text-muted-foreground py-8">搜索食物添加到今日记录</p>
+          <p className="text-center text-sm text-muted-foreground py-8">搜索食物或拍照识别添加到今日记录</p>
         )}
       </div>
+
+      {records.length > 0 && (
+        <div className="glass-card p-4 mt-4 fade-in" style={{
+          background: "linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(236, 72, 153, 0.06))",
+        }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #a855f7, #ec4899)" }}>
+              <Bot size={16} className="text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-bold">AI 饮食建议</p>
+              <p className="text-[10px] text-muted-foreground">每日目标 2000kcal</p>
+            </div>
+          </div>
+          {suggestLoading && (
+            <div className="flex items-center gap-2 py-3">
+              <Loader2 size={14} className="text-primary animate-spin" />
+              <span className="text-xs text-muted-foreground">AI 正在分析中...</span>
+            </div>
+          )}
+          {suggest && !suggestLoading && (
+            <>
+              <p className="text-sm leading-relaxed mb-2">{suggest.suggestion}</p>
+              <p className="text-[10px] text-muted-foreground">{suggest.calorieAdvice}</p>
+            </>
+          )}
+          {!suggest && !suggestLoading && (
+            <p className="text-xs text-muted-foreground py-2">保持均衡饮食，多吃蔬菜水果哦。</p>
+          )}
+        </div>
+      )}
 
       {deleteId && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
