@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNowWeather, get7DayWeather, searchCity, getWeatherIcon, getTemperatureAdvice } from "@/lib/qweather";
+import { getNowWeather, get7DayWeather, searchCity, searchCityByLocation, getWeatherIcon, getTemperatureAdvice } from "@/lib/qweather";
 import { chatWithDeepSeek } from "@/lib/deepseek";
 
 export async function GET(req: NextRequest) {
@@ -8,10 +8,63 @@ export async function GET(req: NextRequest) {
     const locationId = req.nextUrl.searchParams.get("locationId") || "";
     const forecast = req.nextUrl.searchParams.get("forecast") === "true";
     const loc = req.nextUrl.searchParams.get("loc") || "";
+    const lat = req.nextUrl.searchParams.get("lat") || "";
+    const lon = req.nextUrl.searchParams.get("lon") || "";
 
     if (loc && !locationId) {
       const cities = await searchCity(loc);
       return NextResponse.json({ cities });
+    }
+
+    if (lat && lon && !locationId) {
+      const cityInfo = await searchCityByLocation(parseFloat(lat), parseFloat(lon));
+      if (cityInfo) {
+        const now = await getNowWeather(cityInfo.id);
+        if (now) {
+          const emoji = getWeatherIcon(now.icon);
+          const tempNum = parseFloat(now.temp);
+          const advice = getTemperatureAdvice(tempNum);
+          let result: any = {
+            temp: now.temp,
+            feelsLike: now.feelsLike,
+            desc: now.text,
+            emoji,
+            icon: now.icon,
+            humidity: now.humidity,
+            windDir: now.windDir,
+            windScale: now.windScale,
+            precip: now.precip,
+            vis: now.vis,
+            pressure: now.pressure,
+            advice,
+            locationId: cityInfo.id,
+            city: cityInfo.adm1 ? `${cityInfo.name}，${cityInfo.adm1}` : cityInfo.name,
+          };
+
+          if (forecast) {
+            const daily = await get7DayWeather(cityInfo.id);
+            result.forecast = daily;
+          }
+
+          try {
+            const aiSuggestion = await chatWithDeepSeek([
+              {
+                role: "system",
+                content: "你是一个贴心的生活助手。根据当前天气状况，用30字以内的温暖语气给用户一条简短的生活提示（如穿衣、出行建议）。直接回复提示语，不要加引号或其他格式。",
+              },
+              {
+                role: "user",
+                content: `当前温度${now.temp}°C，体感${now.feelsLike}°C，天气${now.text}，湿度${now.humidity}%，风向${now.windDir}，风力${now.windScale}级。`,
+              },
+            ], { temperature: 0.6, maxTokens: 80 });
+            result.aiTip = aiSuggestion.trim();
+          } catch {
+            result.aiTip = `${advice.icon} ${advice.level}天气，${advice.clothing}`;
+          }
+
+          return NextResponse.json(result);
+        }
+      }
     }
 
     if (locationId) {
@@ -63,25 +116,6 @@ export async function GET(req: NextRequest) {
       }
 
       return NextResponse.json(result);
-    }
-
-    const now = await getNowWeather("101010100");
-    if (now) {
-      const emoji = getWeatherIcon(now.icon);
-      const tempNum = parseFloat(now.temp);
-      const advice = getTemperatureAdvice(tempNum);
-      return NextResponse.json({
-        temp: now.temp,
-        feelsLike: now.feelsLike,
-        desc: now.text,
-        emoji,
-        icon: now.icon,
-        humidity: now.humidity,
-        windDir: now.windDir,
-        windScale: now.windScale,
-        advice,
-        locationId: "101010100",
-      });
     }
 
     return NextResponse.json(fallbackWeather());

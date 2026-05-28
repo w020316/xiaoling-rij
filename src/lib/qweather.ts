@@ -80,6 +80,30 @@ export async function searchCity(keyword: string): Promise<QWeatherCity[]> {
   }
 }
 
+export async function searchCityByLocation(lat: number, lon: number): Promise<QWeatherCity | null> {
+  try {
+    const data = await qweatherFetch("/v2/city/lookup", {
+      location: `${lat},${lon}`,
+      range: "cn",
+      number: "1",
+    });
+    if (data.code === "200" && data.location && data.location.length > 0) {
+      const loc = data.location[0];
+      return {
+        id: loc.id,
+        name: loc.name,
+        lat: loc.lat,
+        lon: loc.lon,
+        adm1: loc.adm1,
+        adm2: loc.adm2,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getNowWeather(locationId: string): Promise<QWeatherNow | null> {
   try {
     const data = await qweatherFetch("/v7/weather/now", {

@@ -44,5 +44,8 @@ next-env.d.ts
 # database
 prisma/dev.db
 
+# nested old copy (remove this line if intentionally keeping)
+/xiaoyi-daily/
+
 # uploads
 public/uploads/

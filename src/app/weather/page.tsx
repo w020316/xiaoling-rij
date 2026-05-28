@@ -8,6 +8,8 @@ import {
   setStoredWeather,
   getStoredCity,
   setStoredCity,
+  getStoredGeoLocation,
+  setStoredGeoLocation,
   StoredWeatherCache,
 } from "@/lib/weather-cache";
 import { getWeatherIcon } from "@/lib/qweather";
@@ -58,6 +60,7 @@ export default function WeatherPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentCity, setCurrentCity] = useState<{ city: string; locationId: string }>({ city: "", locationId: "" });
   const [showCityPicker, setShowCityPicker] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     const savedCity = getStoredCity();
@@ -81,8 +84,72 @@ export default function WeatherPage() {
 
     if (savedCity.locationId) {
       fetchWeather(savedCity.locationId);
+    } else {
+      autoLocate();
     }
   }, []);
+
+  function autoLocate() {
+    const cachedGeo = getStoredGeoLocation();
+    if (cachedGeo) {
+      fetchWeatherByLocation(cachedGeo.lat, cachedGeo.lon);
+      return;
+    }
+
+    if (!navigator.geolocation) return;
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setStoredGeoLocation(latitude, longitude);
+        fetchWeatherByLocation(latitude, longitude);
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  }
+
+  async function fetchWeatherByLocation(lat: number, lon: number) {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}&forecast=true`);
+      const data = await res.json();
+      setWeather(data);
+
+      if (data.forecast) {
+        setForecast(data.forecast);
+      }
+
+      if (data.city && data.locationId) {
+        setCurrentCity({ city: data.city, locationId: data.locationId });
+        setStoredCity(data.city, data.locationId);
+      }
+
+      setStoredWeather({
+        id: data.locationId || "",
+        city: data.city || "",
+        locationId: data.locationId || "",
+        temperature: data.temp,
+        feelsLike: data.feelsLike,
+        description: data.desc,
+        icon: data.emoji,
+        humidity: data.humidity,
+        windDir: data.windDir,
+        windScale: data.windScale,
+        advice: data.aiTip || "",
+        fetchedAt: new Date().toISOString(),
+      });
+    } catch {
+      setError("获取天气失败，请检查网络后重试");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const fetchWeather = useCallback(async (locationId: string) => {
     setLoading(true);
@@ -211,6 +278,13 @@ export default function WeatherPage() {
             <div className="flex items-center gap-1 mt-3 text-sm text-muted-foreground">
               <MapPin size={14} className="text-primary" />
               <span>{currentCity.city}</span>
+              <button
+                onClick={autoLocate}
+                disabled={locating}
+                className="ml-2 text-xs text-primary hover:underline disabled:opacity-50"
+              >
+                {locating ? "定位中..." : "重新定位"}
+              </button>
             </div>
           )}
         </section>
@@ -360,9 +434,17 @@ export default function WeatherPage() {
         {!loading && !weather && !showCityPicker && (
           <section className="glass-card p-8 fade-in text-center">
             <CloudSun size={48} className="text-muted-foreground mx-auto mb-3 opacity-40" />
-            <p className="text-sm text-muted-foreground">
-              搜索城市即可查看天气详情
+            <p className="text-sm text-muted-foreground mb-3">
+              正在获取您的位置信息...
             </p>
+            <button
+              onClick={autoLocate}
+              disabled={locating}
+              className="glass-button px-4 py-2 text-sm"
+            >
+              {locating ? "定位中..." : "点击获取位置"}
+            </button>
+            <p className="text-xs text-muted-foreground mt-2">或搜索城市查看天气</p>
           </section>
         )}
       </div>

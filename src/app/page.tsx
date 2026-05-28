@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 import {
+  getStoredCity,
+  getStoredGeoLocation,
+} from "@/lib/weather-cache";
+import {
   CheckSquare, Droplets, Dumbbell, Smile,
   Calendar, Sparkles, Heart, CloudSun, Brain,
   TrendingUp, Plus, Minus
@@ -91,11 +95,20 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const cityInfo = getStoredCity();
+    const geoInfo = getStoredGeoLocation();
+    let weatherUrl = "/api/weather";
+    if (cityInfo?.locationId) {
+      weatherUrl = `/api/weather?locationId=${cityInfo.locationId}`;
+    } else if (geoInfo) {
+      weatherUrl = `/api/weather?lat=${geoInfo.lat}&lon=${geoInfo.lon}`;
+    }
+
     Promise.allSettled([
       fetch("/api/user/stats").then((r) => r.json()),
       fetch("/api/couple").then((r) => r.json()),
       fetch("/api/emotion").then((r) => r.json()),
-      fetch("/api/weather").then((r) => r.json()),
+      fetch(weatherUrl).then((r) => r.json()),
       fetch("/api/schedule").then((r) => r.json()),
       fetch("/api/user").then((r) => r.json()),
       fetch("/api/quote").then((r) => r.json()),

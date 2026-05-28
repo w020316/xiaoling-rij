@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, RefreshCw, Download, Upload, Cloud, Clock, Database, FileJson, AlertCircle, CheckCircle2, X } from "lucide-react";
-import { exportAllData, importAllData, getSyncStatus } from "@/lib/sync-engine";
+import { ArrowLeft, RefreshCw, Download, Upload, Cloud, Clock, Database, FileJson, AlertCircle, CheckCircle2, X, Key, ArrowUpDown, CloudUpload, CloudDownload } from "lucide-react";
+import { exportAllData, importAllData, getSyncStatus, getSyncKey, setSyncKey, cloudSync } from "@/lib/sync-engine";
 
 export default function SyncPage() {
   const [loading, setLoading] = useState(true);
@@ -16,6 +16,9 @@ export default function SyncPage() {
     lastSync: "从未同步",
     version: "1.0",
   });
+  const [syncKeyInput, setSyncKeyInput] = useState("");
+  const [currentSyncKey, setCurrentSyncKey] = useState("");
+  const [showKeySetup, setShowKeySetup] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const refreshStats = useCallback(() => {
@@ -34,12 +37,16 @@ export default function SyncPage() {
 
   useEffect(() => {
     refreshStats();
+    const key = getSyncKey();
+    setCurrentSyncKey(key);
+    setSyncKeyInput(key);
+    if (!key) setShowKeySetup(true);
     setLoading(false);
   }, [refreshStats]);
 
   useEffect(() => {
     if (successMsg) {
-      const timer = setTimeout(() => setSuccessMsg(null), 3000);
+      const timer = setTimeout(() => setSuccessMsg(null), 4000);
       return () => clearTimeout(timer);
     }
   }, [successMsg]);
@@ -80,35 +87,40 @@ export default function SyncPage() {
     }
   }
 
-  async function handleSync() {
+  async function handleCloudSync(direction: "push" | "pull" | "merge") {
+    const key = getSyncKey();
+    if (!key) {
+      setError("请先设置同步密钥");
+      setShowKeySetup(true);
+      return;
+    }
+
     try {
       setSyncing(true);
       setError(null);
-      const jsonStr = exportAllData();
-
-      const res = await fetch("/api/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "merge", data: JSON.parse(jsonStr) }),
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const result = await res.json();
+      const result = await cloudSync(direction);
       if (result.success) {
-        if (typeof localStorage !== "undefined") {
-          localStorage.setItem("xy_sync_last", new Date().toISOString());
-        }
         refreshStats();
-        setSuccessMsg(`同步成功！已合并 ${result.mergedCount || 0} 条数据`);
+        setSuccessMsg(result.message);
       } else {
-        setError(result.message || "同步失败");
+        setError(result.message);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "同步失败，请检查网络连接");
     } finally {
       setSyncing(false);
     }
+  }
+
+  function handleSaveKey() {
+    if (!syncKeyInput.trim()) {
+      setError("同步密钥不能为空");
+      return;
+    }
+    setSyncKey(syncKeyInput.trim());
+    setCurrentSyncKey(syncKeyInput.trim());
+    setShowKeySetup(false);
+    setSuccessMsg("同步密钥已保存！在另一台设备上输入相同密钥即可同步");
   }
 
   if (loading) {
@@ -162,6 +174,49 @@ export default function SyncPage() {
       <div className="flex flex-col gap-4">
         <div className="glass-card p-5 lg:p-6">
           <h2 className="text-sm font-bold mb-4 lg:text-base flex items-center gap-2">
+            <Key size={18} className="text-primary" />
+            同步密钥
+          </h2>
+          {currentSyncKey && !showKeySetup ? (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 glass-input px-4 py-2.5 text-sm font-mono text-center text-primary">
+                {currentSyncKey}
+              </div>
+              <button
+                onClick={() => setShowKeySetup(true)}
+                className="glass-button px-4 py-2.5 text-xs"
+              >
+                修改
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs text-muted-foreground">
+                设置一个同步密钥，在两台设备上输入相同密钥即可同步数据。建议使用情侣邀请码作为密钥。
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={syncKeyInput}
+                  onChange={(e) => setSyncKeyInput(e.target.value)}
+                  placeholder="输入同步密钥..."
+                  className="flex-1 glass-input px-3 py-2.5 text-sm"
+                />
+                <button onClick={handleSaveKey} className="glass-button px-4 py-2.5 text-xs">
+                  保存
+                </button>
+                {currentSyncKey && (
+                  <button onClick={() => setShowKeySetup(false)} className="glass-button-outline px-4 py-2.5 text-xs">
+                    取消
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="glass-card p-5 lg:p-6">
+          <h2 className="text-sm font-bold mb-4 lg:text-base flex items-center gap-2">
             <Database size={18} className="text-primary" />
             数据状态
           </h2>
@@ -194,48 +249,78 @@ export default function SyncPage() {
         <div className="glass-card p-5 lg:p-6">
           <h2 className="text-sm font-bold mb-4 lg:text-base flex items-center gap-2">
             <RefreshCw size={18} className="text-primary" />
-            同步操作
+            云端同步
           </h2>
           <div className="flex flex-col gap-3">
             <button
-              onClick={handleSync}
-              disabled={syncing}
-              className="glass-button py-3 text-sm flex items-center justify-center gap-2 w-full"
+              onClick={() => handleCloudSync("merge")}
+              disabled={syncing || !currentSyncKey}
+              className="glass-button py-3 text-sm flex items-center justify-center gap-2 w-full disabled:opacity-50"
             >
-              <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
-              {syncing ? "同步中..." : "手动同步"}
+              <ArrowUpDown size={16} className={syncing ? "animate-spin" : ""} />
+              {syncing ? "同步中..." : "双向同步（推荐）"}
             </button>
 
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={handleExport}
-                className="glass-button-outline py-3 text-sm flex items-center justify-center gap-2"
+                onClick={() => handleCloudSync("push")}
+                disabled={syncing || !currentSyncKey}
+                className="glass-button-outline py-3 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Download size={16} />
-                导出数据
+                <CloudUpload size={16} />
+                推送到云端
               </button>
 
               <button
-                onClick={() => fileInputRef.current?.click()}
-                className="glass-button-outline py-3 text-sm flex items-center justify-center gap-2"
+                onClick={() => handleCloudSync("pull")}
+                disabled={syncing || !currentSyncKey}
+                className="glass-button-outline py-3 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Upload size={16} />
-                导入数据
+                <CloudDownload size={16} />
+                从云端拉取
               </button>
             </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleImport(file);
-                e.target.value = "";
-              }}
-            />
+            {!currentSyncKey && (
+              <p className="text-xs text-amber-500 text-center">请先设置同步密钥才能使用云端同步</p>
+            )}
           </div>
+        </div>
+
+        <div className="glass-card p-5 lg:p-6">
+          <h2 className="text-sm font-bold mb-4 lg:text-base flex items-center gap-2">
+            <FileJson size={18} className="text-primary" />
+            本地备份
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={handleExport}
+              className="glass-button-outline py-3 text-sm flex items-center justify-center gap-2"
+            >
+              <Download size={16} />
+              导出数据
+            </button>
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="glass-button-outline py-3 text-sm flex items-center justify-center gap-2"
+            >
+              <Upload size={16} />
+              导入数据
+            </button>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImport(file);
+              e.target.value = "";
+            }}
+          />
         </div>
 
         <div className="glass-card p-5 lg:p-6">
@@ -244,10 +329,12 @@ export default function SyncPage() {
             同步说明
           </h2>
           <ul className="text-xs text-muted-foreground space-y-1.5">
-            <li>• 导出数据将当前浏览器中的本地数据保存为 JSON 文件</li>
-            <li>• 导入数据会将 JSON 文件中的数据写入本地存储</li>
-            <li>• 手动同步会将本地数据上传到云端进行合并，防止数据丢失</li>
-            <li>• 导入数据可能覆盖现有数据，请谨慎操作</li>
+            <li>• 在两台设备上设置相同的同步密钥，即可实现数据同步</li>
+            <li>• 双向同步：将本地数据推送到云端，同时拉取云端数据到本地</li>
+            <li>• 推送到云端：仅将本地数据上传，不拉取云端数据</li>
+            <li>• 从云端拉取：仅将云端数据下载到本地，不上传本地数据</li>
+            <li>• 冲突数据会根据更新时间自动合并，较新的数据优先</li>
+            <li>• 导出/导入适合离线场景，可手动传输 JSON 文件</li>
           </ul>
         </div>
       </div>

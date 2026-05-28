@@ -504,6 +504,8 @@ export function initStaticAPI(): boolean {
       // ─── Weather ───
       if (pathname === "/api/weather" && method === "GET") {
         const locationParam = getQueryParam(url, "location");
+        const latParam = getQueryParam(url, "lat");
+        const lonParam = getQueryParam(url, "lon");
         const storedCity = getStoredCity();
         const locId = locationParam || storedCity.locationId;
         const cityData = CITY_WEATHER_MAP[locId] || CITY_WEATHER_MAP["101010100"];
@@ -521,16 +523,18 @@ export function initStaticAPI(): boolean {
         const emoji = getWeatherIcon(cityData.icon);
 
         return jsonResponse({
-          hot: cityData.temp,
+          temp: String(cityData.temp),
           feelsLike,
           desc: cityData.desc,
           emoji,
+          icon: cityData.icon,
           humidity: "45",
           windDir: "东南风",
           windScale: "3",
-          advice: `${advice.clothing}；${advice.activity}`,
-          aiTip: `当前温度 ${cityData.temp}°C，${advice.level}。${advice.clothing}。${advice.health}`,
+          advice,
+          aiTip: `${advice.icon} ${advice.level}天气，${advice.clothing}`,
           city: cityName,
+          locationId: locId,
         });
       }
 
@@ -609,19 +613,29 @@ export function initStaticAPI(): boolean {
       if (pathname === "/api/sync" && method === "POST") {
         const body = await getBody(init!);
         const action = body.action as string;
-        if (action === "merge") {
+        const syncKey = body.syncKey as string || "";
+        if (action === "push") {
           return jsonResponse({
             success: true,
-            message: "本地数据已合并",
-            mergedCount: body.data ? Object.keys(body.data as object).length : 0,
+            message: "本地数据已推送（静态模式）",
+            syncKey,
           });
         }
         if (action === "pull") {
           return jsonResponse({
             success: true,
-            message: "已拉取本地备份数据",
+            message: "已拉取本地备份数据（静态模式）",
             data: {},
+            syncKey,
             lastSync: new Date().toISOString(),
+          });
+        }
+        if (action === "merge") {
+          return jsonResponse({
+            success: true,
+            message: "本地数据已合并",
+            mergedCount: body.data ? Object.keys(body.data as object).length : 0,
+            syncKey,
           });
         }
         return jsonResponse({ error: "未知操作" }, 400);

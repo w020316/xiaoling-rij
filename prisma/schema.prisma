@@ -232,3 +232,12 @@ model WeatherCache {
   icon        String?
   fetchedAt   DateTime @default(now())
 }
+
+model SyncRecord {
+  id         String   @id @default(cuid())
+  syncKey    String   @unique
+  data       String
+  version    String   @default("1")
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+}

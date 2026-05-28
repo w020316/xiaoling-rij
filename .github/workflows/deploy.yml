@@ -14,19 +14,20 @@ jobs:
         with:
           node-version: "20"
       - name: Install
-        working-directory: xiaoyi-daily
         run: npm install
+      - name: Push database schema (prisma db push)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma db push --accept-data-loss
       - name: Generate Prisma Client
-        working-directory: xiaoyi-daily
         run: npx prisma generate
       - name: Build
-        working-directory: xiaoyi-daily
         run: npx next build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          QWEATHER_KEY: ${{ secrets.QWEATHER_KEY }}
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
       - name: Deploy
-        working-directory: xiaoyi-daily
-        run: vercel . --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --env DATABASE_URL="${{ secrets.DATABASE_URL }}" --env DEEPSEEK_API_KEY="${{ secrets.DEEPSEEK_API_KEY }}"
+        run: vercel . --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --env DATABASE_URL="${{ secrets.DATABASE_URL }}" --env DEEPSEEK_API_KEY="${{ secrets.DEEPSEEK_API_KEY }}" --env QWEATHER_KEY="${{ secrets.QWEATHER_KEY }}"

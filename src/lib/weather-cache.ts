@@ -40,14 +40,13 @@ export function setStoredWeather(data: StoredWeatherCache): void {
 }
 
 export function getStoredCity(): { city: string; locationId: string } {
-  if (typeof window === "undefined") return { city: "北京", locationId: "101010100" };
+  if (typeof window === "undefined") return { city: "", locationId: "" };
   try {
     const v = localStorage.getItem("xy_weather_city");
     if (v) return JSON.parse(v);
   } catch {
-    // fallback
   }
-  return { city: "北京", locationId: "101010100" };
+  return { city: "", locationId: "" };
 }
 
 export function setStoredCity(city: string, locationId: string): void {
@@ -55,7 +54,34 @@ export function setStoredCity(city: string, locationId: string): void {
   try {
     localStorage.setItem("xy_weather_city", JSON.stringify({ city, locationId }));
   } catch {
-    // storage full
+  }
+}
+
+export interface StoredGeoLocation {
+  lat: number;
+  lon: number;
+  fetchedAt: string;
+}
+
+export function getStoredGeoLocation(): StoredGeoLocation | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = localStorage.getItem("xy_weather_geo");
+    if (!v) return null;
+    const data: StoredGeoLocation = JSON.parse(v);
+    const fetchedTime = new Date(data.fetchedAt).getTime();
+    if (Date.now() - fetchedTime > 86400000) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredGeoLocation(lat: number, lon: number): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("xy_weather_geo", JSON.stringify({ lat, lon, fetchedAt: new Date().toISOString() }));
+  } catch {
   }
 }
 
