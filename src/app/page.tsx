@@ -6,6 +6,8 @@ import { useTheme } from "@/components/ThemeProvider";
 import {
   getStoredCity,
   getStoredGeoLocation,
+  setStoredGeoLocation,
+  setStoredCity,
 } from "@/lib/weather-cache";
 import {
   CheckSquare, Droplets, Dumbbell, Smile,
@@ -97,11 +99,33 @@ export default function Home() {
   useEffect(() => {
     const cityInfo = getStoredCity();
     const geoInfo = getStoredGeoLocation();
-    let weatherUrl = "/api/weather";
+    let weatherUrl = "/api/weather?noAi=true";
     if (cityInfo?.locationId) {
-      weatherUrl = `/api/weather?locationId=${cityInfo.locationId}`;
+      weatherUrl = `/api/weather?locationId=${cityInfo.locationId}&noAi=true`;
     } else if (geoInfo) {
-      weatherUrl = `/api/weather?lat=${geoInfo.lat}&lon=${geoInfo.lon}`;
+      weatherUrl = `/api/weather?lat=${geoInfo.lat}&lon=${geoInfo.lon}&noAi=true`;
+    }
+
+    if (!cityInfo?.locationId && !geoInfo && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setStoredGeoLocation(latitude, longitude);
+          fetch(`/api/weather?lat=${latitude}&lon=${longitude}&noAi=true`)
+            .then((r) => r.json())
+            .then((data) => {
+              if (data.temp && data.temp !== "--") {
+                setWeather(data);
+                if (data.city && data.locationId) {
+                  setStoredCity(data.city, data.locationId);
+                }
+              }
+            })
+            .catch(() => {});
+        },
+        () => {},
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 600000 }
+      );
     }
 
     Promise.allSettled([

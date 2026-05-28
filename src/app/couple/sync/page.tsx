@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, RefreshCw, Download, Upload, Cloud, Clock, Database, FileJson, AlertCircle, CheckCircle2, X, Key, ArrowUpDown, CloudUpload, CloudDownload } from "lucide-react";
 import { exportAllData, importAllData, getSyncStatus, getSyncKey, setSyncKey, cloudSync } from "@/lib/sync-engine";
+import { isStaticMode } from "@/lib/static-db";
 
 export default function SyncPage() {
   const [loading, setLoading] = useState(true);
@@ -19,6 +20,7 @@ export default function SyncPage() {
   const [syncKeyInput, setSyncKeyInput] = useState("");
   const [currentSyncKey, setCurrentSyncKey] = useState("");
   const [showKeySetup, setShowKeySetup] = useState(false);
+  const [isStatic, setIsStatic] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const refreshStats = useCallback(() => {
@@ -41,6 +43,7 @@ export default function SyncPage() {
     setCurrentSyncKey(key);
     setSyncKeyInput(key);
     if (!key) setShowKeySetup(true);
+    setIsStatic(isStaticMode());
     setLoading(false);
   }, [refreshStats]);
 
@@ -251,6 +254,12 @@ export default function SyncPage() {
             <RefreshCw size={18} className="text-primary" />
             云端同步
           </h2>
+          {isStatic ? (
+            <div className="text-center py-4">
+              <p className="text-xs text-amber-500 mb-2">⚠️ 当前为静态部署模式，不支持云端同步</p>
+              <p className="text-xs text-muted-foreground">请使用下方的"导出/导入"功能手动传输数据，或在支持服务端 API 的环境中使用</p>
+            </div>
+          ) : (
           <div className="flex flex-col gap-3">
             <button
               onClick={() => handleCloudSync("merge")}
@@ -285,6 +294,7 @@ export default function SyncPage() {
               <p className="text-xs text-amber-500 text-center">请先设置同步密钥才能使用云端同步</p>
             )}
           </div>
+          )}
         </div>
 
         <div className="glass-card p-5 lg:p-6">

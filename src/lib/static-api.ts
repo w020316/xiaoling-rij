@@ -507,7 +507,37 @@ export function initStaticAPI(): boolean {
         const latParam = getQueryParam(url, "lat");
         const lonParam = getQueryParam(url, "lon");
         const storedCity = getStoredCity();
-        const locId = locationParam || storedCity.locationId;
+        let locId = locationParam || storedCity.locationId;
+
+        if (!locId && latParam && lonParam) {
+          const lat = parseFloat(latParam);
+          const lon = parseFloat(lonParam);
+          const cityCoords: Array<{ id: string; name: string; lat: number; lon: number }> = [
+            { id: "101010100", name: "北京", lat: 39.9, lon: 116.4 },
+            { id: "101020100", name: "上海", lat: 31.2, lon: 121.5 },
+            { id: "101210101", name: "杭州", lat: 30.3, lon: 120.2 },
+            { id: "101280101", name: "广州", lat: 23.1, lon: 113.3 },
+            { id: "101190101", name: "南京", lat: 32.1, lon: 118.8 },
+            { id: "101110101", name: "西安", lat: 34.3, lon: 108.9 },
+            { id: "101270101", name: "成都", lat: 30.6, lon: 104.1 },
+            { id: "101230101", name: "福州", lat: 26.1, lon: 119.3 },
+            { id: "101040101", name: "重庆", lat: 29.6, lon: 106.5 },
+            { id: "101160101", name: "兰州", lat: 36.1, lon: 103.8 },
+            { id: "101070101", name: "沈阳", lat: 41.8, lon: 123.4 },
+            { id: "101200101", name: "武汉", lat: 30.6, lon: 114.3 },
+            { id: "101250101", name: "深圳", lat: 22.5, lon: 114.1 },
+            { id: "101240101", name: "厦门", lat: 24.5, lon: 118.1 },
+            { id: "101260101", name: "贵阳", lat: 26.6, lon: 106.7 },
+          ];
+          let minDist = Infinity;
+          let closest = cityCoords[0];
+          for (const c of cityCoords) {
+            const d = (c.lat - lat) ** 2 + (c.lon - lon) ** 2;
+            if (d < minDist) { minDist = d; closest = c; }
+          }
+          locId = closest.id;
+        }
+
         const cityData = CITY_WEATHER_MAP[locId] || CITY_WEATHER_MAP["101010100"];
 
         const cityNames: Record<string, string> = {
@@ -578,6 +608,34 @@ export function initStaticAPI(): boolean {
         }
 
         return jsonResponse({ error: "未知操作" }, 400);
+      }
+
+      // ─── Music ───
+      if (pathname === "/api/music" && method === "GET") {
+        const action = getQueryParam(url, "action") || "";
+        if (action === "moods") {
+          return jsonResponse({
+            moods: {
+              healing: { id: 427781278, name: "治愈系纯音乐" },
+              love: { id: 2061306122, name: "甜蜜恋爱" },
+              relax: { id: 3548159091, name: "放松轻音乐" },
+              coffee: { id: 3418802399, name: "咖啡时光" },
+              sleep: { id: 3253723813, name: "助眠" },
+              reading: { id: 3558129283, name: "看书" },
+            },
+          });
+        }
+        if (action === "search") {
+          return jsonResponse({ songs: [] });
+        }
+        if (action === "playlist") {
+          return jsonResponse({
+            name: "静态模式歌单",
+            cover: "",
+            tracks: [],
+          });
+        }
+        return jsonResponse({ songs: [] });
       }
 
       // ─── Holiday ───

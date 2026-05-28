@@ -46,6 +46,7 @@ jobs:
         run: npx next build 2>&1
 
       - name: Restore excluded routes
+        if: always()
         run: |
           mv src/app/_api_backup src/app/api || true
           mv "src/app/_diary_id_backup" "src/app/diary/[id]" || true

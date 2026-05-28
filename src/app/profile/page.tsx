@@ -87,10 +87,11 @@ export default function ProfilePage() {
     { emoji: "📊", label: "成长报告", href: "/ai/weekly", color: "text-green-500" },
     { emoji: "🌙", label: "晚安总结", href: "/ai/goodnight", color: "text-purple-500" },
     { emoji: "🌤️", label: "天气", href: "/weather", color: "text-sky-400" },
+    { emoji: "☁️", label: "数据同步", href: "/couple/sync", color: "text-indigo-500" },
     { emoji: "🔔", label: "提醒设置", href: "/settings#notifications", color: "text-yellow-500" },
     { emoji: "💕", label: "情侣空间", href: "/couple", color: "text-pink-500" },
     { emoji: "🛡️", label: "隐私设置", href: "/settings", color: "text-green-600" },
-    { emoji: "❓", label: "帮助与反馈", href: "#", color: "text-orange-500" },
+    { emoji: "❓", label: "帮助与反馈", href: "https://github.com/w020316/xiaoling-rij/issues", color: "text-orange-500" },
     { emoji: "⚙️", label: "管理后台", href: "/admin", color: "text-gray-500" },
   ];
 

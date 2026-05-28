@@ -157,7 +157,7 @@ export default function SettingsPage() {
           </Link>
         </section>
 
-        <section className="glass-card p-4 fade-in stagger-2">
+        <section id="notifications" className="glass-card p-4 fade-in stagger-2">
           <h2 className="text-sm font-bold mb-4 flex items-center gap-2">
             <Bell size={16} className="text-primary" /> 通知设置
           </h2>
