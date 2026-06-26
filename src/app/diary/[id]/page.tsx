@@ -30,16 +30,27 @@ export default function DiaryDetailPage() {
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [parsedAiData, setParsedAiData] = useState<any>(null);
 
   useEffect(() => {
+    let aborted = false;
+    setLoadError(null);
     fetch(`/api/diary/${params.id}`)
-      .then((r) => r.json())
-      .then((data: Diary) => {
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        if (aborted) return;
+        if (!data || !data.id) throw new Error("日记不存在");
         setDiary(data);
         setEditTitle(data.title || "");
         setEditContent(data.content);
+      })
+      .catch((err) => {
+        if (aborted) return;
+        setLoadError(err.message || "加载失败，请返回重试");
       });
+    return () => { aborted = true; };
   }, [params.id]);
 
   useEffect(() => {
@@ -94,8 +105,18 @@ export default function DiaryDetailPage() {
 
   if (!diary) {
     return (
-      <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 flex items-center justify-center">
-        <p className="text-muted-foreground">加载中...</p>
+      <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 flex flex-col items-center justify-center gap-4">
+        {loadError ? (
+          <>
+            <p className="text-4xl">😔</p>
+            <p className="text-sm text-muted-foreground">{loadError}</p>
+            <Link href="/diary" className="glass-button-outline px-4 py-2 text-sm">
+              返回日记列表
+            </Link>
+          </>
+        ) : (
+          <p className="text-muted-foreground">加载中...</p>
+        )}
       </main>
     );
   }

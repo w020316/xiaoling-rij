@@ -52,6 +52,9 @@ export default function CouplePage() {
   const [deleteConfirm, setDeleteConfirm] = useState<{type: 'anniversary'|'wish'|'savings', id: string} | null>(null);
   const [editingStartDate, setEditingStartDate] = useState(false);
   const [newStartDate, setNewStartDate] = useState("");
+  const [savingsInput, setSavingsInput] = useState<{ id: string; current: number; title: string } | null>(null);
+  const [savingsAmount, setSavingsAmount] = useState("");
+  const [savingsError, setSavingsError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/couple").then((r) => r.json()).then(setCouple);
@@ -136,6 +139,25 @@ export default function CouplePage() {
     } catch {
       setError("更新金额失败");
     }
+  }
+
+  function openSavingsInput(s: { id: string; current: number; title: string }) {
+    setSavingsInput({ id: s.id, current: s.current, title: s.title });
+    setSavingsAmount("");
+    setSavingsError(null);
+  }
+
+  async function confirmSavingsInput() {
+    if (!savingsInput) return;
+    const amount = Number(savingsAmount);
+    if (!savingsAmount || isNaN(amount) || amount <= 0) {
+      setSavingsError("请输入有效金额");
+      return;
+    }
+    await updateSavingsAmount(savingsInput.id, savingsInput.current + amount);
+    setSavingsInput(null);
+    setSavingsAmount("");
+    setSavingsError(null);
   }
 
   async function handleDeleteConfirm() {
@@ -424,10 +446,7 @@ export default function CouplePage() {
                   <span>目标 ¥{s.target.toLocaleString()}</span>
                 </div>
                 <button
-                  onClick={() => {
-                    const add = prompt("存入金额:", "100");
-                    if (add) updateSavingsAmount(s.id, s.current + Number(add));
-                  }}
+                  onClick={() => openSavingsInput(s)}
                   className="glass-button-outline w-full py-1.5 text-xs mt-2"
                 >
                   💰 存入
@@ -450,6 +469,32 @@ export default function CouplePage() {
             <div className="flex gap-3">
               <button onClick={() => setDeleteConfirm(null)} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
               <button onClick={handleDeleteConfirm} className="glass-button bg-red-500 text-white flex-1 py-2 text-sm">删除</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {savingsInput && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center fade-in">
+          <div className="glass-card p-6 mx-4 max-w-xs w-full slide-up">
+            <p className="text-lg font-bold mb-1 text-center">💰 存入金额</p>
+            <p className="text-xs text-muted-foreground mb-4 text-center">{savingsInput.title}</p>
+            <input
+              type="number"
+              inputMode="decimal"
+              autoFocus
+              value={savingsAmount}
+              onChange={(e) => { setSavingsAmount(e.target.value); setSavingsError(null); }}
+              onKeyDown={(e) => e.key === "Enter" && confirmSavingsInput()}
+              placeholder="请输入存入金额"
+              className="glass-input px-3 py-2.5 text-sm w-full text-center text-lg font-bold"
+            />
+            {savingsError && (
+              <p className="text-xs text-red-500 mt-2 text-center">{savingsError}</p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => { setSavingsInput(null); setSavingsAmount(""); setSavingsError(null); }} className="glass-button-outline flex-1 py-2 text-sm">取消</button>
+              <button onClick={confirmSavingsInput} className="glass-button flex-1 py-2 text-sm">确认存入</button>
             </div>
           </div>
         </div>

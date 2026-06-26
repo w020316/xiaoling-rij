@@ -1,7 +1,7 @@
 "use client";
 
 import { staticDB, isStaticMode } from "./static-db";
-import { getTemperatureAdvice, getWeatherIcon } from "./qweather";
+import { getTemperatureAdvice, getWeatherIcon } from "./open-meteo";
 import { getStoredWeather, setStoredWeather, getStoredCity, setStoredCity } from "./weather-cache";
 import { getDailyQuote, getQuoteCount } from "./quotes";
 
@@ -71,23 +71,6 @@ function getTodayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-const CITY_WEATHER_MAP: Record<string, { temp: number; desc: string; icon: string }> = {
-  "101010100": { temp: 22, desc: "晴", icon: "100" },
-  "101020100": { temp: 20, desc: "多云", icon: "101" },
-  "101210101": { temp: 23, desc: "小雨", icon: "305" },
-  "101280101": { temp: 28, desc: "多云", icon: "101" },
-  "101190101": { temp: 21, desc: "阴", icon: "104" },
-  "101110101": { temp: 25, desc: "晴", icon: "100" },
-  "101270101": { temp: 18, desc: "小雨", icon: "305" },
-  "101230101": { temp: 13, desc: "多云", icon: "101" },
-  "101040101": { temp: 24, desc: "阴", icon: "104" },
-  "101160101": { temp: 19, desc: "晴", icon: "100" },
-  "101070101": { temp: 21, desc: "多云", icon: "101" },
-  "101200101": { temp: 22, desc: "晴", icon: "100" },
-  "101250101": { temp: 27, desc: "多云", icon: "101" },
-  "101240101": { temp: 23, desc: "小雨", icon: "305" },
-  "101260101": { temp: 21, desc: "阴", icon: "104" },
-};
 const FALLBACK_QUOTES = [
   "心存温柔，山河浪漫。",
   "每一天都是新的开始，带着笑容出发吧 ✨",
@@ -502,112 +485,10 @@ export function initStaticAPI(): boolean {
       }
 
       // ─── Weather ───
-      if (pathname === "/api/weather" && method === "GET") {
-        const locationParam = getQueryParam(url, "location");
-        const latParam = getQueryParam(url, "lat");
-        const lonParam = getQueryParam(url, "lon");
-        const storedCity = getStoredCity();
-        let locId = locationParam || storedCity.locationId;
-
-        if (!locId && latParam && lonParam) {
-          const lat = parseFloat(latParam);
-          const lon = parseFloat(lonParam);
-          const cityCoords: Array<{ id: string; name: string; lat: number; lon: number }> = [
-            { id: "101010100", name: "北京", lat: 39.9, lon: 116.4 },
-            { id: "101020100", name: "上海", lat: 31.2, lon: 121.5 },
-            { id: "101210101", name: "杭州", lat: 30.3, lon: 120.2 },
-            { id: "101280101", name: "广州", lat: 23.1, lon: 113.3 },
-            { id: "101190101", name: "南京", lat: 32.1, lon: 118.8 },
-            { id: "101110101", name: "西安", lat: 34.3, lon: 108.9 },
-            { id: "101270101", name: "成都", lat: 30.6, lon: 104.1 },
-            { id: "101230101", name: "福州", lat: 26.1, lon: 119.3 },
-            { id: "101040101", name: "重庆", lat: 29.6, lon: 106.5 },
-            { id: "101160101", name: "兰州", lat: 36.1, lon: 103.8 },
-            { id: "101070101", name: "沈阳", lat: 41.8, lon: 123.4 },
-            { id: "101200101", name: "武汉", lat: 30.6, lon: 114.3 },
-            { id: "101250101", name: "深圳", lat: 22.5, lon: 114.1 },
-            { id: "101240101", name: "厦门", lat: 24.5, lon: 118.1 },
-            { id: "101260101", name: "贵阳", lat: 26.6, lon: 106.7 },
-          ];
-          let minDist = Infinity;
-          let closest = cityCoords[0];
-          for (const c of cityCoords) {
-            const d = (c.lat - lat) ** 2 + (c.lon - lon) ** 2;
-            if (d < minDist) { minDist = d; closest = c; }
-          }
-          locId = closest.id;
-        }
-
-        const cityData = CITY_WEATHER_MAP[locId] || CITY_WEATHER_MAP["101010100"];
-
-        const cityNames: Record<string, string> = {
-          "101010100": "北京", "101020100": "上海", "101210101": "杭州",
-          "101280101": "广州", "101190101": "南京", "101110101": "西安",
-          "101270101": "成都", "101230101": "福州", "101040101": "重庆",
-          "101160101": "兰州", "101070101": "沈阳", "101200101": "武汉",
-          "101250101": "深圳", "101240101": "厦门", "101260101": "贵阳",
-        };
-        const cityName = cityNames[locId] || storedCity.city;
-        const feelsLike = String(cityData.temp + (cityData.temp > 20 ? 2 : 1));
-        const advice = getTemperatureAdvice(cityData.temp);
-        const emoji = getWeatherIcon(cityData.icon);
-
-        return jsonResponse({
-          temp: String(cityData.temp),
-          feelsLike,
-          desc: cityData.desc,
-          emoji,
-          icon: cityData.icon,
-          humidity: "45",
-          windDir: "东南风",
-          windScale: "3",
-          advice,
-          aiTip: `${advice.icon} ${advice.level}天气，${advice.clothing}`,
-          city: cityName,
-          locationId: locId,
-        });
-      }
-
-      if (pathname === "/api/weather" && method === "POST") {
-        const body = await getBody(init!);
-        const action = body.action as string;
-
-        if (action === "search") {
-          const keyword = (body.keyword as string || "").toLowerCase();
-          const cityList = [
-            { id: "101010100", name: "北京", adm1: "北京", adm2: "北京" },
-            { id: "101020100", name: "上海", adm1: "上海", adm2: "上海" },
-            { id: "101210101", name: "杭州", adm1: "浙江", adm2: "杭州" },
-            { id: "101280101", name: "广州", adm1: "广东", adm2: "广州" },
-            { id: "101190101", name: "南京", adm1: "江苏", adm2: "南京" },
-            { id: "101110101", name: "西安", adm1: "陕西", adm2: "西安" },
-            { id: "101270101", name: "成都", adm1: "四川", adm2: "成都" },
-            { id: "101230101", name: "福州", adm1: "福建", adm2: "福州" },
-            { id: "101040101", name: "重庆", adm1: "重庆", adm2: "重庆" },
-            { id: "101160101", name: "兰州", adm1: "甘肃", adm2: "兰州" },
-            { id: "101070101", name: "沈阳", adm1: "辽宁", adm2: "沈阳" },
-            { id: "101200101", name: "武汉", adm1: "湖北", adm2: "武汉" },
-            { id: "101250101", name: "深圳", adm1: "广东", adm2: "深圳" },
-            { id: "101240101", name: "厦门", adm1: "福建", adm2: "厦门" },
-            { id: "101260101", name: "贵阳", adm1: "贵州", adm2: "贵阳" },
-          ];
-          const filtered = keyword
-            ? cityList.filter(c => c.name.toLowerCase().includes(keyword) || c.adm2.toLowerCase().includes(keyword))
-            : cityList;
-          return jsonResponse(filtered);
-        }
-
-        if (action === "setCity") {
-          const city = body.city as string;
-          const locationId = body.locationId as string;
-          if (!city || !locationId) {
-            return jsonResponse({ error: "缺少城市信息" }, 400);
-          }
-          setStoredCity(city, locationId);
-          return jsonResponse({ success: true });
-        }
-
-        return jsonResponse({ error: "未知操作" }, 400);
+      // ─── Weather: 调用真实 Open-Meteo API（免费、无需 key、精准定位）───
+      if (pathname === "/api/weather") {
+        // 放行到真实 API（Open-Meteo 免费、无需 key）
+        return originalFetch(input as RequestInfo, init);
       }
 
       // ─── Music ───

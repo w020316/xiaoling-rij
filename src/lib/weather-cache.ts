@@ -13,6 +13,8 @@ export interface StoredWeatherCache {
   windScale: string;
   advice: string;
   fetchedAt: string;
+  lat?: number;
+  lon?: number;
 }
 
 export function getStoredWeather(): StoredWeatherCache | null {

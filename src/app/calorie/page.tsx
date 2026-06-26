@@ -29,6 +29,7 @@ interface CalorieRecord {
   fat: number;
   carbs: number;
   mealType: string;
+  date?: string;
 }
 
 interface AnalyzeResult {
@@ -94,10 +95,19 @@ export default function CaloriePage() {
     name.includes(search)
   );
 
-  const totalCalories = records.reduce((sum, r) => sum + r.calories, 0);
-  const totalProtein = records.reduce((sum, r) => sum + r.protein, 0);
-  const totalFat = records.reduce((sum, r) => sum + r.fat, 0);
-  const totalCarbs = records.reduce((sum, r) => sum + r.carbs, 0);
+  // 仅统计今日记录，避免历史数据累加
+  const todayKey = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+  const todayRecords = records.filter((r) => {
+    if (!r.date) return true; // 无日期字段的旧数据按今日处理
+    return r.date.startsWith(todayKey);
+  });
+  const totalCalories = todayRecords.reduce((sum, r) => sum + r.calories, 0);
+  const totalProtein = todayRecords.reduce((sum, r) => sum + r.protein, 0);
+  const totalFat = todayRecords.reduce((sum, r) => sum + r.fat, 0);
+  const totalCarbs = todayRecords.reduce((sum, r) => sum + r.carbs, 0);
 
   const caloriePercent = Math.min((totalCalories / 2000) * 100, 100);
 

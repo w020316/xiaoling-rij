@@ -20,7 +20,16 @@ export default function AddPhotoPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [photoTime, setPhotoTime] = useState(() => new Date().toISOString().slice(0, 16));
+  const [photoTime, setPhotoTime] = useState(() => {
+    // datetime-local 需要本地时间，不能用 toISOString（UTC）
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  });
   const [category, setCategory] = useState("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

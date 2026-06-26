@@ -50,7 +50,12 @@ const SLEEP_QUALITY_OPTIONS = [
 ];
 
 function getTodayKey() {
-  return new Date().toISOString().slice(0, 10);
+  // 使用本地时区日期，避免 UTC 跨日错位（东八区 0-8 点归昨日）
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function getWeekDates(): string[] {

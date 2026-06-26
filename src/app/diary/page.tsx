@@ -174,19 +174,13 @@ export default function DiaryPage() {
                 </span>
               ))}
             </div>
-            {deleteId === diary.id ? (
-              <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center gap-2 rounded-2xl z-10">
-                <button onClick={(e) => { e.preventDefault(); handleDelete(diary.id); }} className="px-3 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">删除</button>
-                <button onClick={(e) => { e.preventDefault(); setDeleteId(null); }} className="glass-button-outline px-3 py-1.5 text-xs">取消</button>
-              </div>
-            ) : (
-              <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteId(diary.id); }}
-                className="absolute top-3 right-3 p-1.5 rounded-lg text-muted-foreground/40 hover:text-red-500 hover:bg-red-50/50 opacity-0 group-hover:opacity-100 transition-all"
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteId(diary.id); }}
+              className="absolute top-3 right-3 p-1.5 rounded-lg text-muted-foreground/40 hover:text-red-500 hover:bg-red-50/50 opacity-0 group-hover:opacity-100 transition-all"
+              aria-label="删除日记"
+            >
+              <Trash2 size={14} />
+            </button>
           </Link>
         ))}
 

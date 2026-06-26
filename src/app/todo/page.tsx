@@ -410,8 +410,9 @@ export default function TodoPage() {
                 style={{ width: "80px", opacity: swipeOffset > 30 ? 1 : 0 }}
               >
                 <button
-                  onClick={() => deleteTodo(todo.id)}
+                  onClick={() => setDeleteId(todo.id)}
                   className="text-white p-2"
+                  aria-label="删除待办"
                 >
                   <Trash2 size={18} />
                 </button>

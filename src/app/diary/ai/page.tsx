@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { ArrowLeft, Sparkles, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function AiDiaryPage() {
+  const router = useRouter();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   async function handleGenerate() {
     if (!input.trim() || loading) return;
@@ -30,9 +33,10 @@ export default function AiDiaryPage() {
   }
 
   async function handleSave() {
-    if (!result) return;
+    if (!result || saving) return;
+    setSaving(true);
     try {
-      await fetch("/api/diary", {
+      const res = await fetch("/api/diary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -43,9 +47,11 @@ export default function AiDiaryPage() {
           aiContent: JSON.stringify(result),
         }),
       });
-      window.location.href = "/diary";
+      if (!res.ok) throw new Error("保存失败");
+      router.push("/diary");
     } catch {
       setError("保存失败，请重试");
+      setSaving(false);
     }
   }
 
@@ -125,8 +131,8 @@ export default function AiDiaryPage() {
             >
               重新生成
             </button>
-            <button onClick={handleSave} className="glass-button flex-1 py-2 text-sm">
-              💕 保存日记
+            <button onClick={handleSave} disabled={saving} className="glass-button flex-1 py-2 text-sm disabled:opacity-50">
+              {saving ? "保存中..." : "💕 保存日记"}
             </button>
           </div>
         </div>
