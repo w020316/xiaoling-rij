@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "@/components/ThemeProvider";
+import { getThemeMeta } from "@/lib/themes";
 
 const navItems = [
   { href: "/", label: "首页", emoji: "🏠" },
@@ -22,6 +23,7 @@ export function ResponsiveLayout({ children }: {
 }) {
   const pathname = usePathname();
   const { theme } = useTheme();
+  const themeMeta = getThemeMeta(theme);
 
   return (
     <div className="min-h-screen">
@@ -53,16 +55,12 @@ export function ResponsiveLayout({ children }: {
         </nav>
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-2 mb-2">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-              theme === "theme-kuromi" ? "bg-purple-900" :
-              theme === "theme-melody" ? "bg-pink-300" :
-              theme === "theme-cinnamoroll" ? "bg-blue-200" : "bg-gray-800"
-            }`}>
-              {theme === "theme-kuromi" ? "💜" : theme === "theme-melody" ? "🎀" : theme === "theme-cinnamoroll" ? "☁️" : "🌙"}
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${themeMeta.color}`}>
+              {themeMeta.emoji}
             </div>
-            <span className="text-xs text-muted-foreground">当前主题</span>
+            <span className="text-xs text-muted-foreground">当前主题 · {themeMeta.label}</span>
           </div>
-          <p className="text-[10px] text-muted-foreground text-center">v2.4.0 · Made with 💕</p>
+          <p className="text-[10px] text-muted-foreground text-center">v2.4.2 · Made with 💕</p>
         </div>
       </aside>
 

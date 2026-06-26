@@ -133,33 +133,35 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(fallbackWeather());
     }
 
-    // 逆向地理编码获取城市名
-    if (!city) {
-      const geo = await reverseGeocode(lat, lon);
-      if (geo) {
-        city = geo.adm1 ? `${geo.name}，${geo.adm1}` : geo.name;
-        if (!query.locationId) {
-          query.locationId = geo.id;
-        }
+    // 并行化：逆向地理编码 + 当前天气 + 7天预报 同时发起，显著降低总耗时
+    const [geo, current, daily] = await Promise.all([
+      reverseGeocode(lat, lon).catch(() => null),
+      getCurrentWeather(lat, lon).catch(() => null),
+      query.forecast ? get7DayForecast(lat, lon).catch(() => null) : Promise.resolve(null),
+    ]);
+
+    if (geo && !city) {
+      city = geo.adm1 ? `${geo.name}，${geo.adm1}` : geo.name;
+      if (!query.locationId) {
+        query.locationId = geo.id;
       }
     }
 
-    const current = await getCurrentWeather(lat, lon);
     if (!current) {
+      console.error("[weather] getCurrentWeather returned null for", lat, lon);
       return NextResponse.json(fallbackWeather());
     }
 
     const result = buildWeatherResult(current, city, query.locationId);
 
-    if (query.forecast) {
-      const daily = await get7DayForecast(lat, lon);
+    if (query.forecast && daily) {
       result.forecast = daily;
     }
 
-    // AI 提示（可选）
+    // AI 提示（可选）：非阻塞，用 Promise.race 限时 6s，超时则保留本地 aiTip
     if (!query.noAi && DEEPSEEK_API_KEY) {
       try {
-        const aiSuggestion = await chatWithDeepSeek([
+        const aiPromise = chatWithDeepSeek([
           {
             role: "system",
             content: "你是一个贴心的生活助手。根据当前天气状况，用30字以内的温暖语气给用户一条简短的生活提示。直接回复提示语。",
@@ -169,14 +171,22 @@ export async function GET(req: NextRequest) {
             content: `当前温度${current.temp}°C，体感${current.feelsLike}°C，天气${current.desc}，湿度${current.humidity}%，${current.windDir}风${current.windScale}级。`,
           },
         ], { temperature: 0.6, maxTokens: 80 });
+
+        const timeoutPromise = new Promise<string>((_, reject) =>
+          setTimeout(() => reject(new Error("AI timeout")), 6000)
+        );
+
+        const aiSuggestion = await Promise.race([aiPromise, timeoutPromise]);
         result.aiTip = aiSuggestion.trim();
-      } catch {
-        // 保留本地 aiTip
+      } catch (aiErr) {
+        // AI 超时或失败不阻塞天气主数据，保留本地 aiTip
+        console.warn("[weather] AI tip skipped:", aiErr instanceof Error ? aiErr.message : aiErr);
       }
     }
 
     return NextResponse.json(result);
-  } catch {
+  } catch (e) {
+    console.error("[weather] GET failed:", e);
     return NextResponse.json(fallbackWeather());
   }
 }

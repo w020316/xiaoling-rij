@@ -61,9 +61,7 @@ export function BottomNav() {
                 <span className={`text-[10px] transition-all duration-200 ${isActive ? "font-bold" : "font-medium"}`}>
                   {item.label}
                 </span>
-                {isActive && (
-                  <div className="w-1 h-1 rounded-full bg-primary mt-0.5 animate-pulse" />
-                )}
+                <div className={`w-1 h-1 rounded-full bg-primary mt-0.5 transition-opacity duration-200 ${isActive ? "opacity-100" : "opacity-0"}`} />
               </Link>
             );
           })}

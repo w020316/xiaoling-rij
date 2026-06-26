@@ -116,11 +116,28 @@ export function initStaticAPI(): boolean {
 
   const originalFetch = window.fetch;
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const url = typeof input === "string" ? input : (input as Request).url;
+    // 兼容多种 input 类型：string / Request / URL
+    let url: string;
+    try {
+      if (typeof input === "string") {
+        url = input;
+      } else if (input instanceof URL) {
+        url = input.toString();
+      } else if (input && typeof (input as Request).url === "string") {
+        url = (input as Request).url;
+      } else {
+        // 无法解析的 input 直接放行原 fetch
+        return originalFetch(input as RequestInfo, init);
+      }
+    } catch {
+      return originalFetch(input as RequestInfo, init);
+    }
+
     const method = (init?.method || "GET").toUpperCase();
 
-    if (!url.startsWith("/api/")) {
-      return originalFetch(input, init);
+    // 只拦截同源的 /api/ 相对路径请求，绝对路径（RSC payload、第三方）一律放行
+    if (!url || !url.startsWith("/api/")) {
+      return originalFetch(input as RequestInfo, init);
     }
 
     const pathname = url.split("?")[0];
@@ -426,15 +443,11 @@ export function initStaticAPI(): boolean {
         return jsonResponse({ success: true });
       }
       if (pathname === "/api/calorie/analyze" && method === "POST") {
-        const body = await getBody(init!);
+        // 不返回假数据冒充识别结果，明确告知不可用并引导手动输入
         return jsonResponse({
-          name: "识别为日常餐食",
-          calories: 350,
-          protein: 20,
-          fat: 12,
-          carbs: 40,
-          suggestion: "静态模式下无法使用AI识别图片，请手动搜索食物添加。这是一份营养均衡的建议摄入。",
-        });
+          available: false,
+          reason: "AI 图像识别暂未启用，请手动搜索食物添加",
+        }, 501);
       }
       if (pathname === "/api/calorie/suggest" && method === "POST") {
         const body = await getBody(init!);

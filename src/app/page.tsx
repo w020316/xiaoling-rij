@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
+import { THEMES as themes } from "@/lib/themes";
 import {
   getStoredCity,
   getStoredGeoLocation,
@@ -231,18 +232,6 @@ export default function Home() {
   const coupleDays = couple
     ? differenceInDays(new Date(), new Date(couple.startDate))
     : 0;
-
-  const themes = [
-    { key: "theme-kuromi" as const, label: "库洛米", color: "bg-purple-900", emoji: "💜" },
-    { key: "theme-melody" as const, label: "美乐蒂", color: "bg-pink-300", emoji: "🎀" },
-    { key: "theme-cinnamoroll" as const, label: "玉桂狗", color: "bg-blue-200", emoji: "☁️" },
-    { key: "theme-dark" as const, label: "暗黑", color: "bg-gray-800", emoji: "🌙" },
-    { key: "theme-matcha" as const, label: "抹茶", color: "bg-green-700", emoji: "🍵" },
-    { key: "theme-sunset" as const, label: "夕阳", color: "bg-orange-500", emoji: "🌅" },
-    { key: "theme-ocean" as const, label: "海洋", color: "bg-cyan-600", emoji: "🌊" },
-    { key: "theme-rose" as const, label: "玫瑰金", color: "bg-rose-400", emoji: "🌹" },
-    { key: "theme-cyber" as const, label: "赛博朋克", color: "bg-fuchsia-600", emoji: "⚡" },
-  ];
 
   const moods = [
     { emoji: "😊", label: "开心", score: 9 },
@@ -509,7 +498,7 @@ export default function Home() {
               <span>日记 <b className="text-primary">{stats?.diaryCount || 0}</b></span>
               <span>照片 <b className="text-primary">{stats?.photoCount || 0}</b></span>
             </div>
-            <p className="text-[10px] text-muted-foreground">v2.4.0</p>
+            <p className="text-[10px] text-muted-foreground">v2.4.2</p>
           </div>
         </div>
 

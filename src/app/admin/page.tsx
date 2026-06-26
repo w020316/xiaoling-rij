@@ -231,7 +231,7 @@ export default function AdminPage() {
         <h1 className="text-xl font-bold flex-1 flex items-center gap-2">
           <Settings size={22} className="text-primary" /> 管理后台
         </h1>
-        <span className="glass-badge bg-primary/15 text-primary">v2.4.0</span>
+        <span className="glass-badge bg-primary/15 text-primary">v2.4.2</span>
       </header>
 
       {error && (
@@ -320,7 +320,7 @@ export default function AdminPage() {
             <div className="glass-card p-4">
               <h3 className="text-sm font-bold mb-3 flex items-center gap-2"><Settings size={16} className="text-primary" /> 系统信息</h3>
               <div className="flex flex-col gap-2 text-xs text-muted-foreground">
-                <div className="flex justify-between"><span>版本</span><span>v2.4.0</span></div>
+                <div className="flex justify-between"><span>版本</span><span>v2.4.2</span></div>
                 <div className="flex justify-between"><span>框架</span><span>Next.js 16 / React 19</span></div>
                 <div className="flex justify-between"><span>数据库</span><span>PostgreSQL + Prisma</span></div>
                 <div className="flex justify-between"><span>AI 引擎</span><span>DeepSeek</span></div>

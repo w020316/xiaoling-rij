@@ -130,7 +130,9 @@ export default function WeatherPage() {
     }
 
     if (!navigator.geolocation) {
-      setLocateError("您的浏览器不支持定位，请手动搜索城市");
+      setLocateError("您的浏览器不支持定位，已为你通过 IP 定位");
+      // 降级：交给服务端 IP 定位
+      fetchWeatherByIpFallback();
       return;
     }
 
@@ -144,18 +146,60 @@ export default function WeatherPage() {
       },
       (err) => {
         setLocating(false);
+        // 降级：定位失败时调用服务端 IP 定位兜底，确保天气仍能显示
+        fetchWeatherByIpFallback();
         if (err.code === err.PERMISSION_DENIED) {
-          setLocateError("定位权限被拒绝，请手动搜索城市或在浏览器设置中允许定位");
+          setLocateError("定位权限被拒绝，已为你切换到 IP 大致定位，也可手动搜索城市");
         } else if (err.code === err.POSITION_UNAVAILABLE) {
-          setLocateError("定位信息不可用，请手动搜索城市");
+          setLocateError("定位信息不可用，已为你切换到 IP 大致定位");
         } else if (err.code === err.TIMEOUT) {
-          setLocateError("定位超时，请手动搜索城市");
+          setLocateError("定位超时，已为你切换到 IP 大致定位");
         } else {
-          setLocateError("定位失败，请手动搜索城市");
+          setLocateError("定位失败，已为你切换到 IP 大致定位");
         }
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
     );
+  }
+
+  // IP 定位兜底：无坐标请求 /api/weather，服务端通过 x-forwarded-for 定位
+  async function fetchWeatherByIpFallback() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/weather?forecast=true`);
+      const data = await res.json();
+      if (data.temp && data.temp === "--") {
+        setError("获取天气数据失败，请手动搜索城市");
+        return;
+      }
+      setWeather(data);
+      if (data.forecast) {
+        setForecast(data.forecast);
+      }
+      if (data.city && data.locationId) {
+        setCurrentCity({ city: data.city, locationId: data.locationId });
+        setStoredCity(data.city, data.locationId);
+      }
+      setStoredWeather({
+        id: data.locationId || "",
+        city: data.city || "",
+        locationId: data.locationId || "",
+        temperature: data.temp,
+        feelsLike: data.feelsLike,
+        description: data.desc,
+        icon: data.emoji,
+        humidity: data.humidity,
+        windDir: data.windDir,
+        windScale: data.windScale,
+        advice: data.aiTip || "",
+        fetchedAt: new Date().toISOString(),
+      });
+    } catch {
+      setError("获取天气失败，请检查网络后重试");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function fetchWeatherByLocation(lat: number, lon: number) {
@@ -295,7 +339,7 @@ export default function WeatherPage() {
   return (
     <main className="min-h-screen p-5 lg:p-8 pb-28 lg:pb-8 lg:max-w-2xl lg:mx-auto">
       {/* 动态背景层 */}
-      <div className={`fixed inset-0 -z-10 bg-gradient-to-br ${bgGradient} opacity-20 transition-all duration-1000`} />
+      <div className={`fixed inset-0 -z-10 bg-gradient-to-br ${bgGradient} opacity-35 transition-all duration-1000`} />
 
       <header className="flex items-center gap-3 mb-6 pt-2">
         <Link href="/" className="p-1 -ml-1 rounded-xl hover:bg-muted/50 transition-colors">

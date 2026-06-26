@@ -48,12 +48,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // 内联阻塞脚本：在 React hydrate 前从 localStorage 读取主题并写入 <html> className，
+  // 彻底消除首屏 FOUC（Flash of Unstyled Content）闪烁。
+  const themeInitScript = `(function(){try{var t=localStorage.getItem('xiaolin-diary-theme')||'theme-kuromi';document.documentElement.className=t;}catch(e){document.documentElement.className='theme-kuromi';}})();`;
+
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <link rel="apple-touch-icon" href="/icon.svg" />
         <link rel="preconnect" href="https://wttr.in" />
         <link rel="preconnect" href="https://api.deepseek.com" />
+        <link rel="preconnect" href="https://geocoding-api.open-meteo.com" />
+        <link rel="preconnect" href="https://api.open-meteo.com" />
       </head>
       <body className={`${inter.className} min-h-screen relative overflow-x-hidden`}>
         <StaticInit />

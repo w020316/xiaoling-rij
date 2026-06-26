@@ -27,6 +27,10 @@ export default function DiaryDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [editMood, setEditMood] = useState("");
+  const [editWeather, setEditWeather] = useState("");
+  const [editTags, setEditTags] = useState("");
+  const [editLocation, setEditLocation] = useState("");
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +49,10 @@ export default function DiaryDetailPage() {
         setDiary(data);
         setEditTitle(data.title || "");
         setEditContent(data.content);
+        setEditMood(data.mood || "");
+        setEditWeather(data.weather || "");
+        setEditTags(data.tags || "");
+        setEditLocation(data.location || "");
       })
       .catch((err) => {
         if (aborted) return;
@@ -70,8 +78,16 @@ export default function DiaryDetailPage() {
       const res = await fetch(`/api/diary/${params.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: editTitle, content: editContent }),
+        body: JSON.stringify({
+          title: editTitle,
+          content: editContent,
+          mood: editMood,
+          weather: editWeather,
+          tags: editTags,
+          location: editLocation,
+        }),
       });
+      if (!res.ok) throw new Error("保存失败");
       const updated = await res.json();
       setDiary(updated);
       setIsEditing(false);
@@ -101,6 +117,10 @@ export default function DiaryDetailPage() {
     setIsEditing(false);
     setEditTitle(diary?.title || "");
     setEditContent(diary?.content || "");
+    setEditMood(diary?.mood || "");
+    setEditWeather(diary?.weather || "");
+    setEditTags(diary?.tags || "");
+    setEditLocation(diary?.location || "");
   }
 
   if (!diary) {
@@ -191,6 +211,38 @@ export default function DiaryDetailPage() {
                 placeholder="写下你的心情..."
                 className="glass-input px-3 py-2 text-sm w-full min-h-[200px] resize-none leading-relaxed"
               />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={editMood}
+                  onChange={(e) => setEditMood(e.target.value)}
+                  placeholder="心情 emoji（如 😊）"
+                  className="glass-input px-3 py-2 text-sm"
+                />
+                <input
+                  type="text"
+                  value={editWeather}
+                  onChange={(e) => setEditWeather(e.target.value)}
+                  placeholder="天气（如 晴）"
+                  className="glass-input px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={editTags}
+                  onChange={(e) => setEditTags(e.target.value)}
+                  placeholder="标签（逗号分隔）"
+                  className="glass-input px-3 py-2 text-sm"
+                />
+                <input
+                  type="text"
+                  value={editLocation}
+                  onChange={(e) => setEditLocation(e.target.value)}
+                  placeholder="位置"
+                  className="glass-input px-3 py-2 text-sm"
+                />
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleSave}

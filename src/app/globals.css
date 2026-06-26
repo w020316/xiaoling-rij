@@ -186,7 +186,6 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  transition: background-color 0.4s ease, color 0.3s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -346,7 +345,7 @@ body {
 }
 
 .fade-in {
-  animation: fadeIn 0.4s ease-out;
+  animation: fadeIn 0.4s ease-out backwards;
 }
 
 @keyframes fadeIn {
@@ -355,7 +354,7 @@ body {
 }
 
 .slide-up {
-  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 @keyframes slideUp {
@@ -364,7 +363,7 @@ body {
 }
 
 .scale-in {
-  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 @keyframes scaleIn {
@@ -379,13 +378,43 @@ body {
 .stagger-5 { animation-delay: 0.25s; }
 
 .confetti {
-  animation: confetti 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: confetti 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 @keyframes confetti {
   0% { transform: scale(0) rotate(0deg); }
   50% { transform: scale(1.2) rotate(180deg); }
   100% { transform: scale(1) rotate(360deg); }
+}
+
+/* 路由级过渡：每次进入新页面时整体淡入上移 */
+.page-enter {
+  animation: pageEnter 0.28s ease-out backwards;
+}
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Toast 滑入动画 */
+.slide-down {
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 无障碍：尊重用户的减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .pulse-ring {

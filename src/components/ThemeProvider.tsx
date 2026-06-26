@@ -1,17 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-
-type Theme =
-  | "theme-kuromi"
-  | "theme-melody"
-  | "theme-cinnamoroll"
-  | "theme-dark"
-  | "theme-matcha"
-  | "theme-sunset"
-  | "theme-ocean"
-  | "theme-rose"
-  | "theme-cyber";
+import { Theme, DEFAULT_THEME } from "@/lib/themes";
 
 interface ThemeContextType {
   theme: Theme;
@@ -21,14 +11,13 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("theme-kuromi");
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("xiaolin-diary-theme") as Theme;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
+  // 惰性初始化：首次渲染即从 localStorage 读取，避免 mount 后才切换导致的二次闪烁。
+  // 注意：layout.tsx 的内联脚本已保证 <html> className 在 hydrate 前就正确，
+  // 这里只需让 React state 与之一致即可。
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return DEFAULT_THEME;
+    return (localStorage.getItem("xiaolin-diary-theme") as Theme) || DEFAULT_THEME;
+  });
 
   useEffect(() => {
     document.documentElement.className = theme;

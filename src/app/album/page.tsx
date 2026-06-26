@@ -120,21 +120,25 @@ export default function AlbumPage() {
 
   async function handleAiSearch() {
     if (!searchQuery.trim()) return;
+    // 直接复用本地真实过滤（description/location/aiTags/category），不调用虚假 AI
     setAiSearching(true);
     setAiResult("");
     try {
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: `请根据以下描述找出照片分类关键词，只返回一个简短的分类词：${searchQuery}` }],
-        }),
-      });
-      const data = await res.json();
-      setAiResult(data.content || data.reply || "暂无结果");
+      const keyword = searchQuery.trim();
+      const matched = photos.filter(
+        (p) =>
+          p.description?.includes(keyword) ||
+          p.location?.includes(keyword) ||
+          p.aiTags?.includes(keyword) ||
+          p.category?.includes(keyword)
+      );
+      if (matched.length > 0) {
+        setAiResult(`找到 ${matched.length} 张相关照片 ✨`);
+      } else {
+        setAiResult("没有找到匹配的照片，试试其他关键词吧");
+      }
     } catch {
-      setError("AI搜索暂时不可用，请稍后再试～");
-      setAiResult("AI搜索暂时不可用，请稍后再试～");
+      setAiResult("搜索出错，请重试");
     } finally {
       setAiSearching(false);
     }

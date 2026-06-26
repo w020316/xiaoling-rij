@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ThemeProvider";
+import { THEMES as themes } from "@/lib/themes";
 import {
   Palette, Heart, ChevronRight, User, X, CloudSun
 } from "lucide-react";
@@ -74,18 +75,6 @@ export default function ProfilePage() {
         console.warn("加载统计信息失败");
       });
   }, []);
-
-  const themes = [
-    { key: "theme-kuromi" as const, label: "库洛米", emoji: "💜", color: "bg-purple-900" },
-    { key: "theme-melody" as const, label: "美乐蒂", emoji: "🎀", color: "bg-pink-300" },
-    { key: "theme-cinnamoroll" as const, label: "玉桂狗", emoji: "☁️", color: "bg-blue-200" },
-    { key: "theme-dark" as const, label: "暗黑", emoji: "🌙", color: "bg-gray-800" },
-    { key: "theme-matcha" as const, label: "抹茶", emoji: "🍵", color: "bg-green-700" },
-    { key: "theme-sunset" as const, label: "夕阳", emoji: "🌅", color: "bg-orange-500" },
-    { key: "theme-ocean" as const, label: "海洋", emoji: "🌊", color: "bg-cyan-600" },
-    { key: "theme-rose" as const, label: "玫瑰金", emoji: "🌹", color: "bg-rose-400" },
-    { key: "theme-cyber" as const, label: "赛博朋克", emoji: "⚡", color: "bg-fuchsia-600" },
-  ];
 
   const menuItems = [
     { emoji: "📅", label: "课程表", href: "/schedule", color: "text-blue-500" },
@@ -228,7 +217,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="mt-6 text-center fade-in">
-        <p className="text-xs text-muted-foreground">小林日记 v2.4.0</p>
+        <p className="text-xs text-muted-foreground">小林日记 v2.4.2</p>
         <p className="text-xs text-muted-foreground mt-1">Made with 💕</p>
       </div>
     </main>
