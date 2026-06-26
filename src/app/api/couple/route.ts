@@ -24,13 +24,16 @@ export async function GET() {
     return NextResponse.json(couple);
   } catch (error) {
     console.error("Get couple error:", error);
-    return NextResponse.json(null, { status: 500 });
+    return NextResponse.json(null);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    if (body.startDate && isNaN(new Date(body.startDate).getTime())) {
+      return NextResponse.json({ error: "startDate 日期格式无效" }, { status: 400 });
+    }
     const couple = await prisma.couple.create({
       data: {
         inviteCode: Math.random().toString(36).substring(2, 8).toUpperCase(),

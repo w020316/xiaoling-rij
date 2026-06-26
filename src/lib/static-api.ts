@@ -3,7 +3,7 @@
 import { staticDB, isStaticMode } from "./static-db";
 import { getTemperatureAdvice, getWeatherIcon } from "./qweather";
 import { getStoredWeather, setStoredWeather, getStoredCity, setStoredCity } from "./weather-cache";
-import { getDailyQuote } from "./quotes";
+import { getDailyQuote, getQuoteCount } from "./quotes";
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -497,7 +497,7 @@ export function initStaticAPI(): boolean {
           content: quote.content,
           theme: quote.theme,
           author: quote.author || null,
-          total: 100
+          total: getQuoteCount()
         });
       }
 

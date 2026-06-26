@@ -2,7 +2,16 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "theme-kuromi" | "theme-melody" | "theme-cinnamoroll" | "theme-dark";
+type Theme =
+  | "theme-kuromi"
+  | "theme-melody"
+  | "theme-cinnamoroll"
+  | "theme-dark"
+  | "theme-matcha"
+  | "theme-sunset"
+  | "theme-ocean"
+  | "theme-rose"
+  | "theme-cyber";
 
 interface ThemeContextType {
   theme: Theme;

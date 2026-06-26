@@ -8,17 +8,17 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const updated = await prisma.emotionRecord.update({
+    const updated = await prisma.calorieRecord.update({
       where: { id },
       data: {
-        ...(body.mood !== undefined && { mood: body.mood }),
-        ...(body.score !== undefined && { score: body.score }),
-        ...(body.note !== undefined && { note: body.note }),
+        ...(body.foodName !== undefined && { foodName: body.foodName }),
+        ...(body.calories !== undefined && { calories: body.calories }),
+        ...(body.mealType !== undefined && { mealType: body.mealType }),
       },
     });
     return NextResponse.json(updated);
   } catch (error) {
-    console.error("Update emotion error:", error);
+    console.error("Update calorie error:", error);
     return NextResponse.json({ error: "更新失败" }, { status: 500 });
   }
 }
@@ -29,10 +29,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await prisma.emotionRecord.delete({ where: { id } });
+    await prisma.calorieRecord.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete emotion error:", error);
+    console.error("Delete calorie error:", error);
     return NextResponse.json({ error: "删除失败" }, { status: 500 });
   }
 }

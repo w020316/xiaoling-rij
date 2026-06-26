@@ -96,6 +96,91 @@
     --glass-bg: rgba(26, 26, 36, 0.75);
     --glass-border: rgba(129, 140, 248, 0.2);
   }
+
+  /* 抹茶绿 - 自然清新 */
+  .theme-matcha {
+    --background: #f5f7f0;
+    --foreground: #2d3a2a;
+    --primary: #658554;
+    --primary-foreground: #ffffff;
+    --card: #ebeee2;
+    --card-foreground: #2d3a2a;
+    --muted: #e2e8d5;
+    --muted-foreground: #7a8b6f;
+    --accent: #8fb47a;
+    --accent-foreground: #1f2a1c;
+    --border-color: #c8d4b8;
+    --glass-bg: rgba(235, 238, 226, 0.72);
+    --glass-border: rgba(101, 133, 84, 0.25);
+  }
+
+  /* 夕阳橙 - 温暖活力 */
+  .theme-sunset {
+    --background: #fff7ed;
+    --foreground: #431407;
+    --primary: #ea580c;
+    --primary-foreground: #ffffff;
+    --card: #ffedd5;
+    --card-foreground: #431407;
+    --muted: #fed7aa;
+    --muted-foreground: #c2410c;
+    --accent: #fb923c;
+    --accent-foreground: #431407;
+    --border-color: #fdba74;
+    --glass-bg: rgba(255, 237, 213, 0.72);
+    --glass-border: rgba(234, 88, 12, 0.25);
+  }
+
+  /* 海洋蓝 - 深邃宁静 */
+  .theme-ocean {
+    --background: #ecfeff;
+    --foreground: #083344;
+    --primary: #0891b2;
+    --primary-foreground: #ffffff;
+    --card: #cffafe;
+    --card-foreground: #083344;
+    --muted: #a5f3fc;
+    --muted-foreground: #0e7490;
+    --accent: #22d3ee;
+    --accent-foreground: #083344;
+    --border-color: #67e8f9;
+    --glass-bg: rgba(207, 250, 254, 0.72);
+    --glass-border: rgba(8, 145, 178, 0.25);
+  }
+
+  /* 玫瑰金 - 优雅奢华 */
+  .theme-rose {
+    --background: #fff1f2;
+    --foreground: #4c0519;
+    --primary: #e11d48;
+    --primary-foreground: #ffffff;
+    --card: #ffe4e6;
+    --card-foreground: #4c0519;
+    --muted: #fecdd3;
+    --muted-foreground: #be123c;
+    --accent: #fb7185;
+    --accent-foreground: #4c0519;
+    --border-color: #fda4af;
+    --glass-bg: rgba(255, 228, 230, 0.72);
+    --glass-border: rgba(225, 29, 72, 0.25);
+  }
+
+  /* 赛博朋克 - 未来科技（暗色） */
+  .theme-cyber {
+    --background: #0a0014;
+    --foreground: #f0e6ff;
+    --primary: #d946ef;
+    --primary-foreground: #ffffff;
+    --card: #1a0a2e;
+    --card-foreground: #f0e6ff;
+    --muted: #2a1a3e;
+    --muted-foreground: #a78bda;
+    --accent: #06b6d4;
+    --accent-foreground: #0a0014;
+    --border-color: #3d2a5c;
+    --glass-bg: rgba(26, 10, 46, 0.78);
+    --glass-border: rgba(217, 70, 239, 0.35);
+  }
 }
 
 body {
@@ -413,4 +498,31 @@ body {
 @keyframes gentlePulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 40%, transparent); }
   50% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--primary) 0%, transparent); }
+}
+
+/* ============ 赛博朋克主题专属效果 ============ */
+.theme-cyber .glass-card {
+  box-shadow: 0 0 24px rgba(217, 70, 239, 0.15), 0 4px 24px rgba(0, 0, 0, 0.4);
+  border-color: rgba(217, 70, 239, 0.3);
+}
+
+.theme-cyber .glass-card:hover {
+  box-shadow: 0 0 32px rgba(217, 70, 239, 0.3), 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.theme-cyber .gradient-text {
+  text-shadow: 0 0 20px rgba(217, 70, 239, 0.5);
+}
+
+.theme-cyber .glass-button {
+  box-shadow: 0 0 24px rgba(217, 70, 239, 0.4);
+}
+
+.theme-cyber .breathe-border {
+  animation: cyberGlow 3s ease-in-out infinite;
+}
+
+@keyframes cyberGlow {
+  0%, 100% { box-shadow: 0 0 24px rgba(217, 70, 239, 0.2), 0 0 0 0 rgba(6, 182, 212, 0.4); }
+  50% { box-shadow: 0 0 40px rgba(217, 70, 239, 0.4), 0 0 0 8px rgba(6, 182, 212, 0); }
 }

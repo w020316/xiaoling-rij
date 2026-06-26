@@ -41,10 +41,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ moods: MOOD_PLAYLISTS });
     }
 
-    if (action === "search") {
-      return NextResponse.json({ songs: [] });
-    }
-
     return NextResponse.json({
       actions: ["search", "url", "playlist", "moods"],
       usage: {

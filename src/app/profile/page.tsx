@@ -80,6 +80,11 @@ export default function ProfilePage() {
     { key: "theme-melody" as const, label: "美乐蒂", emoji: "🎀", color: "bg-pink-300" },
     { key: "theme-cinnamoroll" as const, label: "玉桂狗", emoji: "☁️", color: "bg-blue-200" },
     { key: "theme-dark" as const, label: "暗黑", emoji: "🌙", color: "bg-gray-800" },
+    { key: "theme-matcha" as const, label: "抹茶", emoji: "🍵", color: "bg-green-700" },
+    { key: "theme-sunset" as const, label: "夕阳", emoji: "🌅", color: "bg-orange-500" },
+    { key: "theme-ocean" as const, label: "海洋", emoji: "🌊", color: "bg-cyan-600" },
+    { key: "theme-rose" as const, label: "玫瑰金", emoji: "🌹", color: "bg-rose-400" },
+    { key: "theme-cyber" as const, label: "赛博朋克", emoji: "⚡", color: "bg-fuchsia-600" },
   ];
 
   const menuItems = [
@@ -184,21 +189,24 @@ export default function ProfilePage() {
       </div>
 
       <div className="glass-card p-4 mb-4 slide-up">
-        <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-          <Palette size={16} className="text-primary" /> 主题切换
-        </h3>
-        <div className="flex gap-3">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold flex items-center gap-2">
+            <Palette size={16} className="text-primary" /> 主题切换
+          </h3>
+          <span className="glass-badge bg-primary/10 text-primary">{themes.length} 套</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
           {themes.map((t) => (
             <button
               key={t.key}
               onClick={() => setTheme(t.key)}
-              className={`flex-1 h-16 rounded-xl flex flex-col items-center justify-center gap-1 border-2 transition-all ${
+              className={`h-16 rounded-xl flex flex-col items-center justify-center gap-1 border-2 transition-all ${
                 theme === t.key
-                  ? "border-primary bg-primary/10"
-                  : "border-transparent bg-muted/50"
+                  ? "border-primary bg-primary/10 scale-105"
+                  : "border-transparent bg-muted/50 hover:bg-muted"
               }`}
             >
-              <span className="text-lg">{t.emoji}</span>
+              <div className={`w-7 h-7 rounded-full ${t.color} flex items-center justify-center text-sm shadow-md`}>{t.emoji}</div>
               <span className="text-[10px] font-medium">{t.label}</span>
             </button>
           ))}
@@ -220,7 +228,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="mt-6 text-center fade-in">
-        <p className="text-xs text-muted-foreground">小林日记 v2.3.0</p>
+        <p className="text-xs text-muted-foreground">小林日记 v2.4.0</p>
         <p className="text-xs text-muted-foreground mt-1">Made with 💕</p>
       </div>
     </main>

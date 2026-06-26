@@ -9,13 +9,16 @@ export async function GET() {
     return NextResponse.json(todos);
   } catch (error) {
     console.error("Get todos error:", error);
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json([]);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
+      return NextResponse.json({ error: "title 为必填项" }, { status: 400 });
+    }
     const todo = await prisma.todo.create({
       data: {
         title: body.title,

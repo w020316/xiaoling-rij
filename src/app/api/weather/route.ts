@@ -95,18 +95,21 @@ export async function GET(req: NextRequest) {
     }
 
     if (!noAi) {
-      chatWithDeepSeek([
-        {
-          role: "system",
-          content: "你是一个贴心的生活助手。根据当前天气状况，用30字以内的温暖语气给用户一条简短的生活提示（如穿衣、出行建议）。直接回复提示语，不要加引号或其他格式。",
-        },
-        {
-          role: "user",
-          content: `当前温度${now.temp}°C，体感${now.feelsLike}°C，天气${now.text}，湿度${now.humidity}%，风向${now.windDir}，风力${now.windScale}级。`,
-        },
-      ], { temperature: 0.6, maxTokens: 80 }).then((aiSuggestion) => {
+      try {
+        const aiSuggestion = await chatWithDeepSeek([
+          {
+            role: "system",
+            content: "你是一个贴心的生活助手。根据当前天气状况，用30字以内的温暖语气给用户一条简短的生活提示（如穿衣、出行建议）。直接回复提示语，不要加引号或其他格式。",
+          },
+          {
+            role: "user",
+            content: `当前温度${now.temp}°C，体感${now.feelsLike}°C，天气${now.text}，湿度${now.humidity}%，风向${now.windDir}，风力${now.windScale}级。`,
+          },
+        ], { temperature: 0.6, maxTokens: 80 });
         result.aiTip = aiSuggestion.trim();
-      }).catch(() => {});
+      } catch {
+        // AI 调用失败时保留 buildWeatherResult 中已生成的本地 aiTip
+      }
     }
 
     return NextResponse.json(result);

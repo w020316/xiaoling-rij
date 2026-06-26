@@ -6,11 +6,19 @@ interface ChatMessage {
   content: string;
 }
 
+// 接收外部传入的宽松消息类型，内部转换为 ChatMessage
+type InputMessage = { role: string; content: string };
+
 export async function chatWithDeepSeek(
-  messages: ChatMessage[],
+  messages: ChatMessage[] | InputMessage[],
   options?: { temperature?: number; maxTokens?: number }
 ) {
   try {
+    // 规范化消息类型，确保 role 符合 DeepSeek API 要求
+    const normalizedMessages: ChatMessage[] = messages.map((m) => ({
+      role: (["system", "user", "assistant"].includes(m.role) ? m.role : "user") as ChatMessage["role"],
+      content: m.content,
+    }));
     const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
       method: "POST",
       headers: {
@@ -19,7 +27,7 @@ export async function chatWithDeepSeek(
       },
       body: JSON.stringify({
         model: "deepseek-chat",
-        messages,
+        messages: normalizedMessages,
         temperature: options?.temperature ?? 0.7,
         max_tokens: options?.maxTokens ?? 2000,
       }),
@@ -146,31 +154,9 @@ export async function generateGoodnightSummary(data: {
 }
 
 export async function analyzeFoodImage(imageBase64: string) {
-  const messages: ChatMessage[] = [
-    {
-      role: "system",
-      content:
-        "你是一个食物识别助手。根据图片识别食物，返回JSON：{name: '食物名称', calories: 估算热量, protein: 蛋白质g, fat: 脂肪g, carbs: 碳水g, suggestion: '饮食建议'}。只返回JSON。",
-    },
-    {
-      role: "user",
-      content: [
-        {
-          type: "image_url",
-          image_url: { url: imageBase64 },
-        },
-      ] as any,
-    },
-  ];
-
-  const result = await chatWithDeepSeek(messages);
-  try {
-    const jsonMatch = result.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    return null;
-  } catch {
-    return null;
-  }
+  // DeepSeek 当前 API 仅支持文本模型，不支持 vision 图像输入。
+  // 这里保留接口签名以兼容前端调用，但明确返回"不可用"标识，
+  // 让前端引导用户走手动输入流程，避免静默失败。
+  console.warn("analyzeFoodImage: DeepSeek 不支持 vision，返回不可用标识");
+  return { available: false, reason: "AI 图像识别暂未启用，请手动输入食物信息" };
 }

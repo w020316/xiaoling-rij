@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 import {
@@ -12,7 +12,7 @@ import {
 import {
   CheckSquare, Droplets, Dumbbell, Smile,
   Calendar, Sparkles, Heart, CloudSun, Brain,
-  TrendingUp, Plus, Minus
+  TrendingUp, Plus, Minus, ArrowUpRight, Zap,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 
@@ -86,17 +86,48 @@ export default function Home() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [waterCups, setWaterCupsState] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [nickname, setNickname] = useState("");
   const [quote, setQuote] = useState("");
   const [exerciseMinutes, setExerciseMinutes] = useState(0);
   const [memory, setMemory] = useState<{ type: string; content: string; date: string } | null>(null);
 
+  // 分阶段加载：critical（首屏关键）/ secondary（次要，不阻塞）
+  const [criticalReady, setCriticalReady] = useState(false);
+  const [secondaryReady, setSecondaryReady] = useState(false);
+  const weatherFetchedRef = useRef(false);
+
   useEffect(() => {
     setWaterCupsState(getWaterCups());
   }, []);
 
+  // ============ 阶段 1：关键路径（用户 + 统计 + 打卡 + 情侣）============
   useEffect(() => {
+    let mounted = true;
+    Promise.allSettled([
+      fetch("/api/user/stats").then((r) => r.json()),
+      fetch("/api/checkin").then((r) => r.json()),
+      fetch("/api/couple").then((r) => r.json()),
+      fetch("/api/user").then((r) => r.json()),
+      fetch("/api/quote").then((r) => r.json()),
+    ]).then((results) => {
+      if (!mounted) return;
+      const [statsRes, checkinRes, coupleRes, userRes, quoteRes] = results;
+      if (statsRes.status === "fulfilled") setStats(statsRes.value);
+      if (checkinRes.status === "fulfilled") setCheckedIn(!!checkinRes.value?.checkedIn);
+      if (coupleRes.status === "fulfilled") setCouple(coupleRes.value);
+      if (userRes.status === "fulfilled" && userRes.value?.nickname) setNickname(userRes.value.nickname);
+      if (quoteRes.status === "fulfilled" && quoteRes.value?.content) setQuote(quoteRes.value.content);
+      setCriticalReady(true);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  // ============ 阶段 2：次要数据（天气 + 课程 + 情绪 + 运动）============
+  useEffect(() => {
+    if (!criticalReady) return;
+    let mounted = true;
+
+    // 天气：优先用缓存的定位
     const cityInfo = getStoredCity();
     const geoInfo = getStoredGeoLocation();
     let weatherUrl = "/api/weather?noAi=true";
@@ -106,64 +137,74 @@ export default function Home() {
       weatherUrl = `/api/weather?lat=${geoInfo.lat}&lon=${geoInfo.lon}&noAi=true`;
     }
 
-    if (!cityInfo?.locationId && !geoInfo && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          setStoredGeoLocation(latitude, longitude);
-          fetch(`/api/weather?lat=${latitude}&lon=${longitude}&noAi=true`)
-            .then((r) => r.json())
-            .then((data) => {
-              if (data.temp && data.temp !== "--") {
-                setWeather(data);
-                if (data.city && data.locationId) {
-                  setStoredCity(data.city, data.locationId);
+    if (!weatherFetchedRef.current) {
+      weatherFetchedRef.current = true;
+      // 如果没缓存定位，尝试 geolocation（异步，不阻塞）
+      if (!cityInfo?.locationId && !geoInfo && typeof navigator !== "undefined" && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (!mounted) return;
+            const { latitude, longitude } = pos.coords;
+            setStoredGeoLocation(latitude, longitude);
+            fetch(`/api/weather?lat=${latitude}&lon=${longitude}&noAi=true`)
+              .then((r) => r.json())
+              .then((data) => {
+                if (mounted && data.temp && data.temp !== "--") {
+                  setWeather(data);
+                  if (data.city && data.locationId) setStoredCity(data.city, data.locationId);
                 }
-              }
-            })
-            .catch(() => {});
-        },
-        () => {},
-        { enableHighAccuracy: false, timeout: 5000, maximumAge: 600000 }
-      );
+              })
+              .catch(() => {});
+          },
+          () => {
+            // 拒绝授权时用默认城市
+            fetch(weatherUrl).then((r) => r.json()).then((d) => mounted && setWeather(d)).catch(() => {});
+          },
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 600000 }
+        );
+      } else {
+        fetch(weatherUrl).then((r) => r.json()).then((d) => mounted && setWeather(d)).catch(() => {});
+      }
     }
 
     Promise.allSettled([
-      fetch("/api/user/stats").then((r) => r.json()),
-      fetch("/api/couple").then((r) => r.json()),
       fetch("/api/emotion").then((r) => r.json()),
-      fetch(weatherUrl).then((r) => r.json()),
       fetch("/api/schedule").then((r) => r.json()),
-      fetch("/api/user").then((r) => r.json()),
-      fetch("/api/quote").then((r) => r.json()),
-      fetch("/api/checkin").then((r) => r.json()),
-    ]).then(async (results) => {
-      const [statsRes, coupleRes, emotionRes, weatherRes, scheduleRes, userRes, quoteRes, checkinRes] = results;
-      if (statsRes.status === "fulfilled") setStats(statsRes.value);
-      if (coupleRes.status === "fulfilled") setCouple(coupleRes.value);
+    ]).then((results) => {
+      if (!mounted) return;
+      const [emotionRes, scheduleRes] = results;
       if (emotionRes.status === "fulfilled" && emotionRes.value) setTodayMood(emotionRes.value.mood);
-      if (weatherRes.status === "fulfilled") setWeather(weatherRes.value);
       if (scheduleRes.status === "fulfilled") {
         const today = getTodayDayOfWeek();
         const todaySchedules = Array.isArray(scheduleRes.value)
           ? scheduleRes.value.filter((s: ScheduleItem) => s.dayOfWeek === today)
           : [];
-        todaySchedules.sort((a: ScheduleItem, b: ScheduleItem) =>
-          a.timeStart.localeCompare(b.timeStart)
-        );
+        todaySchedules.sort((a: ScheduleItem, b: ScheduleItem) => a.timeStart.localeCompare(b.timeStart));
         setSchedules(todaySchedules);
       }
-      if (userRes.status === "fulfilled" && userRes.value?.nickname) setNickname(userRes.value.nickname);
-      if (quoteRes.status === "fulfilled" && quoteRes.value?.content) setQuote(quoteRes.value.content);
-      if (checkinRes.status === "fulfilled") setCheckedIn(!!checkinRes.value?.checkedIn);
+      // 本地运动记录
+      try {
+        const saved = localStorage.getItem("exercise-records");
+        if (saved) {
+          const records = JSON.parse(saved);
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const todayRecords = records.filter((r: any) => r.date === todayStr);
+          setExerciseMinutes(todayRecords.reduce((s: number, r: any) => s + r.duration, 0));
+        }
+      } catch { /* 静默 */ }
+      setSecondaryReady(true);
+    });
+
+    // ============ 阶段 3：去年今日回忆（最不紧急）============
+    (async () => {
       try {
         const lastYear = new Date();
         lastYear.setFullYear(lastYear.getFullYear() - 1);
         const lastYearDate = format(lastYear, "yyyy-MM-dd");
         const [diaryRes, photoRes] = await Promise.all([
-          fetch(`/api/diary`),
-          fetch(`/api/photo`),
+          fetch("/api/diary"), fetch("/api/photo"),
         ]);
+        if (!mounted) return;
         const diaries = await diaryRes.json();
         const photos = await photoRes.json();
         const lastYearDiary = Array.isArray(diaries)
@@ -177,25 +218,11 @@ export default function Home() {
             setMemory({ type: "photo", content: lastYearPhoto.description || "一张照片", date: lastYearDate });
           }
         }
-      } catch {
-        console.warn("无法加载去年今日回忆");
-      }
-      try {
-        const saved = localStorage.getItem("exercise-records");
-        if (saved) {
-          const records = JSON.parse(saved);
-          const todayStr = new Date().toISOString().slice(0, 10);
-          const todayRecords = records.filter((r: any) => r.date === todayStr);
-          setExerciseMinutes(todayRecords.reduce((s: number, r: any) => s + r.duration, 0));
-        }
-      } catch {
-        console.warn("无法加载本地运动记录");
-      }
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
-  }, []);
+      } catch { /* 静默 */ }
+    })();
+
+    return () => { mounted = false; };
+  }, [criticalReady]);
 
   const addWater = useCallback(() => {
     const next = Math.min(waterCups + 1, 8);
@@ -236,6 +263,11 @@ export default function Home() {
     { key: "theme-melody" as const, label: "美乐蒂", color: "bg-pink-300", emoji: "🎀" },
     { key: "theme-cinnamoroll" as const, label: "玉桂狗", color: "bg-blue-200", emoji: "☁️" },
     { key: "theme-dark" as const, label: "暗黑", color: "bg-gray-800", emoji: "🌙" },
+    { key: "theme-matcha" as const, label: "抹茶", color: "bg-green-700", emoji: "🍵" },
+    { key: "theme-sunset" as const, label: "夕阳", color: "bg-orange-500", emoji: "🌅" },
+    { key: "theme-ocean" as const, label: "海洋", color: "bg-cyan-600", emoji: "🌊" },
+    { key: "theme-rose" as const, label: "玫瑰金", color: "bg-rose-400", emoji: "🌹" },
+    { key: "theme-cyber" as const, label: "赛博朋克", color: "bg-fuchsia-600", emoji: "⚡" },
   ];
 
   const moods = [
@@ -252,7 +284,8 @@ export default function Home() {
       : 0
     : 0;
 
-  if (loading) {
+  // ============ 加载态：骨架屏（关键路径未就绪时）============
+  if (!criticalReady) {
     return (
       <main className="min-h-screen p-5 lg:p-8 flex flex-col gap-5 pb-28 lg:pb-8">
         <header className="flex items-center justify-between pt-2">
@@ -280,7 +313,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen p-5 lg:p-8 flex flex-col gap-5 pb-28 lg:pb-8">
-      {/* ====== Mobile Layout (single column) ====== */}
+      {/* ====== Mobile Layout ====== */}
       <div className="lg:hidden flex flex-col gap-5">
         <header className="flex items-center justify-between pt-2 fade-in">
           <div className="flex items-center gap-3">
@@ -297,14 +330,15 @@ export default function Home() {
           </div>
           <Link href="/weather" className="glass-card px-3 py-1.5 flex items-center gap-1.5 text-sm hover:bg-primary/5 transition-colors">
             <CloudSun size={16} className="text-primary" />
-            <span>{weather?.emoji} {weather?.temp}{weather?.temp !== "--" ? "°C" : ""}</span>
+            <span>{weather ? `${weather.emoji} ${weather.temp}${weather.temp !== "--" ? "°C" : ""}` : "···"}</span>
             {weather?.city && <span className="text-[10px] text-muted-foreground ml-0.5">{weather.city}</span>}
           </Link>
         </header>
 
-        <div className="glass-card p-4 text-center relative overflow-hidden fade-in breathe-border">
+        {/* 主视觉卡片 - 大字号渐变标题 */}
+        <div className="glass-card p-5 text-center relative overflow-hidden fade-in breathe-border">
           <div className="absolute top-2 right-3 text-primary/40 text-2xl emoji-bounce">💖</div>
-          <p className="text-sm text-muted-foreground mb-1">在一起</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-1">TOGETHER · 在一起</p>
           <h2 className="text-4xl font-bold flex items-end justify-center gap-1">
             第 <span className="text-5xl gradient-text">{coupleDays}</span> 天
           </h2>
@@ -407,7 +441,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          ) : <p className="text-sm text-muted-foreground text-center py-2">今天没有课程 🎉</p>}
+          ) : <p className="text-sm text-muted-foreground text-center py-2">{secondaryReady ? "今天没有课程 🎉" : "加载中..."}</p>}
         </div>
 
         <div className="glass-card p-4 fade-in">
@@ -436,33 +470,21 @@ export default function Home() {
           )}
         </div>
 
-        <div className="glass-card p-4 fade-in">
-          <h3 className="text-sm font-bold flex items-center gap-2 mb-3"><Sparkles size={16} className="text-primary" /> 主题切换</h3>
-          <div className="flex gap-3 overflow-x-auto pb-1">
-            {themes.map((t) => (
-              <button key={t.key} onClick={() => setTheme(t.key)}
-                className={`flex-shrink-0 w-18 h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 border-2 transition-all ${
-                  theme === t.key ? "border-primary bg-primary/10 scale-105" : "border-transparent bg-muted/50"
-                }`}
-              >
-                <div className={`w-8 h-8 rounded-full ${t.color} flex items-center justify-center text-sm`}>{t.emoji}</div>
-                <span className="text-[10px] font-medium">{t.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        <ThemeSwitcher themes={themes} currentTheme={theme} onThemeChange={setTheme} />
 
-        <footer className="text-center text-[10px] text-muted-foreground/50 pt-2 pb-4">v2.3.0</footer>
+        <footer className="text-center text-[10px] text-muted-foreground/50 pt-2 pb-4">v2.4.0</footer>
       </div>
 
-      {/* ====== Desktop Layout (Dashboard Grid) ====== */}
+      {/* ====== Desktop Layout (参考作品集布局灵感) ====== */}
       <div className="hidden lg:grid lg:grid-cols-3 lg:gap-5 lg:auto-rows-min">
+        {/* Hero 区：编号 + 大字号渐变 */}
         <header className="col-span-full flex items-center justify-between pt-2 fade-in">
           <div className="flex items-center gap-4">
             <button onClick={handleCheckIn} className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-3xl float-animation hover:scale-110 transition-transform">
               🐱
             </button>
             <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-0.5">DAILY · 恋爱日常</p>
               <h1 className="text-2xl font-bold">{getGreeting()}，{nickname || "小林"} ✨</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
                 连续打卡 <span className="text-primary font-bold">{stats?.checkInDays || 0}</span> 天 🔥
@@ -473,15 +495,20 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <Link href="/weather" className="glass-card px-4 py-2.5 flex items-center gap-2 text-base hover:bg-primary/5 transition-colors">
               <CloudSun size={18} className="text-primary" />
-              <span>{weather?.emoji} {weather?.temp}{weather?.temp !== "--" ? "°C" : ""}</span>
+              <span>{weather ? `${weather.emoji} ${weather.temp}${weather.temp !== "--" ? "°C" : ""}` : "···"}</span>
               {weather?.city && <span className="text-xs text-muted-foreground">{weather.city}</span>}
             </Link>
           </div>
         </header>
 
-        <div className="col-span-2 glass-card p-6 relative overflow-hidden fade-in breathe-border">
+        {/* 主视觉大卡片：编号 01 + 大字号渐变 */}
+        <div className="col-span-2 glass-card p-7 relative overflow-hidden fade-in breathe-border">
           <div className="absolute -top-4 -right-4 text-7xl opacity-15 emoji-bounce">💖</div>
           <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-bold text-primary">01</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">TOGETHER</span>
+            </div>
             <p className="text-sm text-muted-foreground mb-1">在一起</p>
             <h2 className="text-5xl font-bold flex items-end gap-2">
               第 <span className="text-6xl gradient-text">{coupleDays}</span> 天
@@ -494,16 +521,25 @@ export default function Home() {
           </div>
         </div>
 
+        {/* 每日一言 + 数据统计 */}
         <div className="glass-card p-5 flex flex-col justify-between fade-in">
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">每日一言</p>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-bold text-primary">02</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">QUOTE</span>
+            </div>
             <p className="text-sm italic text-foreground leading-relaxed">&ldquo; {quote || "心存温柔，山河浪漫。"} &rdquo;</p>
           </div>
-          <div className="mt-3 pt-3 border-t border-border">
-            <p className="text-[10px] text-muted-foreground">v2.3.0 · Made with 💕</p>
+          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+            <div className="flex gap-3 text-[10px] text-muted-foreground">
+              <span>日记 <b className="text-primary">{stats?.diaryCount || 0}</b></span>
+              <span>照片 <b className="text-primary">{stats?.photoCount || 0}</b></span>
+            </div>
+            <p className="text-[10px] text-muted-foreground">v2.4.0</p>
           </div>
         </div>
 
+        {/* 今日进度 */}
         {stats && stats.todoCount > 0 && (
           <div className="glass-card p-5 fade-in">
             <div className="flex items-center justify-between mb-3">
@@ -517,46 +553,52 @@ export default function Home() {
           </div>
         )}
 
+        {/* 功能卡片网格 */}
         <Link href="/todo" className="glass-card p-5 flex items-center gap-4 hover:bg-primary/5 transition-colors slide-up stagger-1 group card-shine hover-lift">
           <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <CheckSquare size={24} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3 className="font-bold text-sm">今日待办</h3>
             <p className="text-xs text-muted-foreground">{stats?.pendingTodoCount || 0} 项待完成</p>
           </div>
+          <ArrowUpRight size={16} className="text-muted-foreground/50 group-hover:text-primary transition-colors" />
         </Link>
 
         <Link href="/diary" className="glass-card p-5 flex items-center gap-4 hover:bg-pink-500/5 transition-colors slide-up stagger-2 group card-shine hover-lift">
           <div className="w-12 h-12 rounded-xl bg-pink-500/10 text-pink-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <Heart size={24} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3 className="font-bold text-sm">写日记</h3>
             <p className="text-xs text-muted-foreground">记录今天的情绪与成长</p>
           </div>
+          <ArrowUpRight size={16} className="text-muted-foreground/50 group-hover:text-pink-500 transition-colors" />
         </Link>
 
         <Link href="/health" className="glass-card p-5 flex items-center gap-4 hover:bg-green-500/5 transition-colors slide-up stagger-3 group card-shine hover-lift">
           <div className="w-12 h-12 rounded-xl bg-green-500/10 text-green-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <Dumbbell size={24} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3 className="font-bold text-sm">健康运动</h3>
             <p className="text-xs text-muted-foreground">今日 {exerciseMinutes} 分钟运动</p>
           </div>
+          <ArrowUpRight size={16} className="text-muted-foreground/50 group-hover:text-green-500 transition-colors" />
         </Link>
 
         <Link href="/album" className="glass-card p-5 flex items-center gap-4 hover:bg-purple-500/5 transition-colors slide-up stagger-4 group card-shine hover-lift">
           <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
             <CameraIcon size={24} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3 className="font-bold text-sm">时光相册</h3>
             <p className="text-xs text-muted-foreground">{stats?.photoCount || 0} 张照片</p>
           </div>
+          <ArrowUpRight size={16} className="text-muted-foreground/50 group-hover:text-purple-500 transition-colors" />
         </Link>
 
+        {/* 喝水 */}
         <div className="glass-card p-5 fade-in">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold flex items-center gap-2"><Droplets size={16} className="text-blue-400" /> 喝水</h3>
@@ -577,6 +619,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/* 今日心情 */}
         <div className="glass-card p-5 fade-in">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold flex items-center gap-2"><Smile size={16} className="text-primary" /> 今日心情</h3>
@@ -591,6 +634,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/* 今日课程 */}
         <div className="glass-card p-5 fade-in">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold flex items-center gap-2"><Calendar size={16} className="text-primary" /> 今日课程</h3>
@@ -605,9 +649,10 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          ) : <p className="text-sm text-muted-foreground text-center py-3">今天没有课程 🎉</p>}
+          ) : <p className="text-sm text-muted-foreground text-center py-3">{secondaryReady ? "今天没有课程 🎉" : "加载中..."}</p>}
         </div>
 
+        {/* AI 回忆 */}
         <div className="glass-card p-5 fade-in">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold flex items-center gap-2"><Brain size={16} className="text-primary" /> AI回忆</h3>
@@ -634,16 +679,25 @@ export default function Home() {
           )}
         </div>
 
-        <div className="glass-card p-5 fade-in">
-          <h3 className="text-sm font-bold flex items-center gap-2 mb-3"><Sparkles size={16} className="text-primary" /> 主题切换</h3>
-          <div className="grid grid-cols-4 gap-2">
+        {/* 主题切换 */}
+        <div className="glass-card p-5 fade-in col-span-full">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <Sparkles size={16} className="text-primary" /> 主题切换
+              <span className="glass-badge bg-primary/10 text-primary ml-1">{themes.length} 套</span>
+            </h3>
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <Zap size={10} /> 实时预览
+            </span>
+          </div>
+          <div className="grid grid-cols-3 lg:grid-cols-9 gap-2">
             {themes.map((t) => (
               <button key={t.key} onClick={() => setTheme(t.key)}
                 className={`rounded-xl flex flex-col items-center justify-center gap-1.5 border-2 transition-all py-2.5 ${
                   theme === t.key ? "border-primary bg-primary/10 scale-105" : "border-transparent bg-muted/50 hover:bg-muted"
                 }`}
               >
-                <div className={`w-9 h-9 rounded-full ${t.color} flex items-center justify-center text-base`}>{t.emoji}</div>
+                <div className={`w-9 h-9 rounded-full ${t.color} flex items-center justify-center text-base shadow-md`}>{t.emoji}</div>
                 <span className="text-[10px] font-medium">{t.label}</span>
               </button>
             ))}
@@ -651,6 +705,36 @@ export default function Home() {
         </div>
       </div>
     </main>
+  );
+}
+
+// 移动端主题切换器（横向滚动）
+function ThemeSwitcher({
+  themes, currentTheme, onThemeChange,
+}: {
+  themes: { key: any; label: string; color: string; emoji: string }[];
+  currentTheme: string;
+  onThemeChange: (t: any) => void;
+}) {
+  return (
+    <div className="glass-card p-4 fade-in">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-bold flex items-center gap-2"><Sparkles size={16} className="text-primary" /> 主题切换</h3>
+        <span className="glass-badge bg-primary/10 text-primary">{themes.length} 套</span>
+      </div>
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {themes.map((t) => (
+          <button key={t.key} onClick={() => onThemeChange(t.key)}
+            className={`flex-shrink-0 w-18 h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 border-2 transition-all ${
+              currentTheme === t.key ? "border-primary bg-primary/10 scale-105" : "border-transparent bg-muted/50"
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-full ${t.color} flex items-center justify-center text-sm shadow-md`}>{t.emoji}</div>
+            <span className="text-[10px] font-medium">{t.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

@@ -226,7 +226,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <span className="text-xl">💕</span>
             <span className="font-bold">恋爱日常</span>
-            <span className="text-xs text-muted-foreground">v2.3.0</span>
+            <span className="text-xs text-muted-foreground">v2.4.0</span>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <a href="https://github.com/w020316/xiaoling-rij" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-1">

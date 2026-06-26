@@ -62,7 +62,7 @@ export function ResponsiveLayout({ children }: {
             </div>
             <span className="text-xs text-muted-foreground">当前主题</span>
           </div>
-          <p className="text-[10px] text-muted-foreground text-center">v2.3.0 · Made with 💕</p>
+          <p className="text-[10px] text-muted-foreground text-center">v2.4.0 · Made with 💕</p>
         </div>
       </aside>
 

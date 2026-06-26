@@ -131,15 +131,13 @@ export const staticDB = {
   getUserStats() {
     const todos = staticDB.getTodos();
     const diaries = staticDB.getDiaries();
-    const checkIns = dbGet<StoredCheckIn[]>("checkins", []);
     const photos = dbGet<StoredPhoto[]>("photos", []);
-    const today = getToday();
-    const todayTodos = todos.filter(t => t.createdAt?.slice(0, 10) === today);
+    const user = staticDB.getUser();
     return {
-      todoCount: todayTodos.length,
-      pendingTodoCount: todayTodos.filter(t => !t.isDone).length,
-      diaryCount: diaries.filter(d => d.createdAt?.slice(0, 10) === today).length,
-      checkInDays: checkIns.length,
+      todoCount: todos.length,
+      pendingTodoCount: todos.filter(t => !t.isDone).length,
+      diaryCount: diaries.length,
+      checkInDays: user.checkInDays || 0,
       photoCount: photos.length,
     };
   },
@@ -406,9 +404,16 @@ export const staticDB = {
     arr.unshift(c);
     dbSet("checkins", arr);
     const user = staticDB.getUser();
-    const today = getToday();
-    const todayCounted = arr.filter(ci => ci.createdAt.slice(0, 10) !== today).length;
-    staticDB.updateUser({ checkInDays: todayCounted + 1, lastCheckIn: new Date().toISOString() });
+    // 与 API 对齐：计算连续打卡天数（断签重置为 1）
+    const now = new Date();
+    const todayStr = getToday();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+    const lastCheckInStr = user.lastCheckIn ? user.lastCheckIn.slice(0, 10) : null;
+    const isConsecutive = lastCheckInStr === yesterdayStr;
+    const newCheckInDays = isConsecutive ? (user.checkInDays || 0) + 1 : 1;
+    staticDB.updateUser({ checkInDays: newCheckInDays, lastCheckIn: new Date().toISOString() });
     return c;
   },
 

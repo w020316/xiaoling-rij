@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Images, Plus, Heart, MapPin, Calendar, Search, Clock,
-  X, Trash2, Sparkles, MessageSquare
+  X, Trash2, Sparkles, MessageSquare, Loader2
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -42,6 +42,7 @@ export default function AlbumPage() {
   const [aiSearching, setAiSearching] = useState(false);
   const [aiResult, setAiResult] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchPhotos();
@@ -49,11 +50,13 @@ export default function AlbumPage() {
   }, []);
 
   async function fetchPhotos() {
+    setLoading(true);
     try {
       const res = await fetch("/api/photo");
       const data = await res.json();
-      setPhotos(data);
+      setPhotos(Array.isArray(data) ? data : []);
     } catch { setError("加载失败，请刷新重试"); }
+    finally { setLoading(false); }
   }
 
   async function fetchLastYearPhoto() {
@@ -283,7 +286,24 @@ export default function AlbumPage() {
         ))}
       </div>
 
-      {searchFiltered.length === 0 && (
+      {loading && (
+        <div className="flex flex-col gap-3">
+          <div className="glass-card overflow-hidden h-48 skeleton" />
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="glass-card overflow-hidden">
+                <div className="aspect-square skeleton" />
+                <div className="p-2.5">
+                  <div className="h-3 w-3/4 skeleton rounded mb-1" />
+                  <div className="h-2 w-1/2 skeleton rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!loading && searchFiltered.length === 0 && (
         <div className="text-center py-12 fade-in">
           <p className="text-4xl mb-3">📸</p>
           <p className="text-sm text-muted-foreground">还没有照片哦</p>
@@ -291,7 +311,7 @@ export default function AlbumPage() {
         </div>
       )}
 
-      {searchFiltered.length > 0 && (
+      {!loading && searchFiltered.length > 0 && (
         <>
           {heroPhoto && (
             <div
