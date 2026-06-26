@@ -1,0 +1,17 @@
+{
+  "name": "小林日记 | XiaoLin Diary",
+  "short_name": "小林日记",
+  "description": "治愈系日常记录应用，支持待办、日记、相册、情侣空间与健康管理",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1028",
+  "theme_color": "#a855f7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
