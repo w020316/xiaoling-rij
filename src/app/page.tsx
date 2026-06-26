@@ -6,8 +6,6 @@ import { useTheme } from "@/components/ThemeProvider";
 import {
   getStoredCity,
   getStoredGeoLocation,
-  setStoredGeoLocation,
-  setStoredCity,
 } from "@/lib/weather-cache";
 import {
   CheckSquare, Droplets, Dumbbell, Smile,
@@ -127,44 +125,20 @@ export default function Home() {
     if (!criticalReady) return;
     let mounted = true;
 
-    // 天气：优先用缓存的定位
-    const cityInfo = getStoredCity();
-    const geoInfo = getStoredGeoLocation();
-    let weatherUrl = "/api/weather?noAi=true";
-    if (cityInfo?.locationId) {
-      weatherUrl = `/api/weather?locationId=${cityInfo.locationId}&noAi=true`;
-    } else if (geoInfo) {
-      weatherUrl = `/api/weather?lat=${geoInfo.lat}&lon=${geoInfo.lon}&noAi=true`;
-    }
-
+    // 天气：直接 fetch（localStorage 模式下被拦截毫秒级返回；服务端模式用缓存城市）
     if (!weatherFetchedRef.current) {
       weatherFetchedRef.current = true;
-      // 如果没缓存定位，尝试 geolocation（异步，不阻塞）
-      if (!cityInfo?.locationId && !geoInfo && typeof navigator !== "undefined" && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            if (!mounted) return;
-            const { latitude, longitude } = pos.coords;
-            setStoredGeoLocation(latitude, longitude);
-            fetch(`/api/weather?lat=${latitude}&lon=${longitude}&noAi=true`)
-              .then((r) => r.json())
-              .then((data) => {
-                if (mounted && data.temp && data.temp !== "--") {
-                  setWeather(data);
-                  if (data.city && data.locationId) setStoredCity(data.city, data.locationId);
-                }
-              })
-              .catch(() => {});
-          },
-          () => {
-            // 拒绝授权时用默认城市
-            fetch(weatherUrl).then((r) => r.json()).then((d) => mounted && setWeather(d)).catch(() => {});
-          },
-          { enableHighAccuracy: false, timeout: 5000, maximumAge: 600000 }
-        );
-      } else {
-        fetch(weatherUrl).then((r) => r.json()).then((d) => mounted && setWeather(d)).catch(() => {});
+      const cityInfo = getStoredCity();
+      const geoInfo = getStoredGeoLocation();
+      let weatherUrl = "/api/weather?noAi=true";
+      if (cityInfo?.locationId) {
+        weatherUrl = `/api/weather?locationId=${cityInfo.locationId}&noAi=true`;
+      } else if (geoInfo) {
+        weatherUrl = `/api/weather?lat=${geoInfo.lat}&lon=${geoInfo.lon}&noAi=true`;
       }
+      fetch(weatherUrl).then((r) => r.json()).then((d) => {
+        if (mounted) setWeather(d);
+      }).catch(() => {});
     }
 
     Promise.allSettled([

@@ -115,7 +115,13 @@ function getToday(): string {
 
 export function isStaticMode(): boolean {
   if (typeof window === "undefined") return false;
-  return window.location.hostname.includes("github.io");
+  // 默认所有客户端部署都使用 localStorage 本地持久化
+  // 优势：开箱即用、毫秒级读取、数据真实保存、无需配置数据库
+  // 如需启用服务端数据库（PostgreSQL），在 Vercel 环境变量设置：
+  //   NEXT_PUBLIC_USE_SERVER_DB=true
+  // 并配置 DATABASE_URL
+  if (window.location.hostname.includes("github.io")) return true;
+  return process.env.NEXT_PUBLIC_USE_SERVER_DB !== "true";
 }
 
 export const staticDB = {

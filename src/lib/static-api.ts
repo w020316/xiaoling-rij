@@ -672,27 +672,27 @@ export function initStaticAPI(): boolean {
         const body = await getBody(init!);
         const action = body.action as string;
         const syncKey = body.syncKey as string || "";
+        // 静态模式不支持云端同步，明确告知用户使用导出/导入
         if (action === "push") {
           return jsonResponse({
-            success: true,
-            message: "本地数据已推送（静态模式）",
+            success: false,
+            message: "当前为本地存储模式，不支持云端同步。请在设置页使用「数据导出」备份，更换设备时用「数据导入」恢复",
             syncKey,
           });
         }
         if (action === "pull") {
           return jsonResponse({
-            success: true,
-            message: "已拉取本地备份数据（静态模式）",
+            success: false,
+            message: "当前为本地存储模式，无云端数据可拉取。请使用「数据导入」功能恢复备份",
             data: {},
             syncKey,
-            lastSync: new Date().toISOString(),
           });
         }
         if (action === "merge") {
           return jsonResponse({
-            success: true,
-            message: "本地数据已合并",
-            mergedCount: body.data ? Object.keys(body.data as object).length : 0,
+            success: false,
+            message: "当前为本地存储模式，不支持云端合并",
+            mergedCount: 0,
             syncKey,
           });
         }
